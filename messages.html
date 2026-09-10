@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Messages — Pen Africa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;overflow:hidden;}
+    :root{
+      --bg:#0A0F0A;--bg2:#111811;--bg3:#182018;
+      --lime:#7FFF3D;--lime-hot:#39FF14;
+      --green:#2D5F3E;--sage:#6B8F6B;
+      --white:#F5F5F0;
+      --rule:rgba(127,255,61,0.12);
+      --serif:'Cormorant Garamond',serif;--sans:'Inter',system-ui,sans-serif;
+    }
+    body{background:var(--bg);color:var(--white);font-family:var(--sans);}
+    a{text-decoration:none;color:inherit;}
+
+    /* ══ Outer shell: fixed height, set exactly once, never re-derived ══ */
+    .shell{height:100vh;height:100svh;display:flex;flex-direction:column;}
+
+    .header{flex-shrink:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px;height:56px;border-bottom:1px solid var(--rule);background:rgba(10,15,10,0.97);}
+    .back-link{display:flex;align-items:center;gap:8px;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);justify-self:start;}
+    .back-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+    .header-brand{text-align:center;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--sage);}
+    .live-badge{justify-self:end;display:flex;align-items:center;gap:6px;font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--lime);}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:var(--lime-hot);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+    /* ══ Body: everything below header, fills remaining space ══ */
+    .body{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;}
+
+    /* ── LIST VIEW ── */
+    .list-view{flex:1;min-height:0;display:flex;flex-direction:column;}
+    .list-view.hidden{display:none;}
+    .list-toolbar{flex-shrink:0;padding:14px 16px;border-bottom:1px solid var(--rule);display:flex;flex-direction:column;gap:10px;}
+    .new-msg-btn{width:100%;padding:12px;border-radius:8px;background:var(--lime);border:none;color:var(--bg);font-weight:700;font-size:0.85rem;cursor:pointer;}
+    .new-msg-btn:active{background:var(--lime-hot);}
+    .search-input{width:100%;padding:10px 14px;border-radius:8px;background:var(--bg3);border:1px solid var(--rule);color:var(--white);font-size:0.85rem;font-family:var(--sans);}
+    .search-input:focus{outline:none;border-color:var(--lime);}
+
+    .new-conv-panel{flex-shrink:0;padding:14px 16px;background:var(--bg3);border-bottom:1px solid var(--rule);display:none;}
+    .new-conv-panel.open{display:block;}
+    .new-conv-panel input{width:100%;padding:10px 14px;border-radius:8px;background:var(--bg);border:1px solid var(--rule);color:var(--white);font-size:0.85rem;margin-bottom:8px;}
+    .user-result{display:flex;align-items:center;gap:10px;padding:9px 6px;cursor:pointer;border-radius:6px;}
+    .user-result:active{background:var(--bg2);}
+    .empty-hint{font-size:0.78rem;color:var(--sage);padding:8px 4px;}
+
+    .list-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+    .conv-item{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--rule);position:relative;}
+    .conv-item:active{background:var(--bg2);}
+    .conv-item.comment-item{border-left:3px solid var(--lime);background:rgba(127,255,61,0.04);}
+    .avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;}
+    .avatar img{width:100%;height:100%;object-fit:cover;}
+    .conv-body{flex:1;min-width:0;}
+    .conv-name{font-weight:600;font-size:0.88rem;margin-bottom:2px;}
+    .conv-tag{background:var(--lime);color:var(--bg);font-size:0.58rem;letter-spacing:0.05em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:700;margin-right:6px;}
+    .conv-preview{font-size:0.78rem;color:var(--sage);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .unread-dot{width:8px;height:8px;border-radius:50%;background:var(--lime-hot);flex-shrink:0;}
+    .empty-list{padding:60px 24px;text-align:center;color:var(--sage);font-size:0.85rem;}
+
+    /* ── THREAD VIEW ── */
+    .thread-view{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg);}
+    .thread-view.active{display:flex;}
+    .thread-header{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--rule);}
+    .thread-header .avatar{width:36px;height:36px;font-size:0.85rem;}
+    .thread-name{flex:1;font-weight:600;font-size:0.92rem;}
+    .icon-btn{background:none;border:none;color:var(--sage);cursor:pointer;padding:6px;font-size:1.1rem;}
+
+    .thread-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:8px;}
+    .bubble-row{display:flex;max-width:78%;}
+    .bubble-row.mine{align-self:flex-end;}
+    .bubble-row.theirs{align-self:flex-start;}
+    .bubble{padding:10px 14px;border-radius:16px;font-size:0.88rem;line-height:1.45;word-wrap:break-word;}
+    .bubble-row.theirs .bubble{background:var(--bg3);border-bottom-left-radius:4px;}
+    .bubble-row.mine .bubble{background:var(--green);border-bottom-right-radius:4px;}
+    .bubble-time{font-size:0.6rem;color:var(--sage);margin-top:3px;}
+    .bubble-row.mine .bubble-time{text-align:right;}
+
+    /* Composer: flex-shrink:0 inside the flex column, NOT position:fixed,
+       NOT sized off any viewport unit — it just takes the space it needs
+       and the .thread-scroll above absorbs everything else via flex:1.
+       This is what keeps it stable when the keyboard opens/closes. */
+    .composer{flex-shrink:0;display:flex;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:var(--bg2);border-top:2px solid var(--green);align-items:flex-end;}
+    .composer textarea{flex:1;padding:11px 16px;border-radius:22px;background:var(--bg3);border:1.5px solid var(--sage);color:var(--white);font-family:var(--sans);font-size:0.9rem;resize:none;max-height:100px;min-height:42px;line-height:1.35;}
+    .composer textarea:focus{outline:none;border-color:var(--lime);}
+    .send-btn{width:42px;height:42px;border-radius:50%;background:var(--lime);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .send-btn:active{background:var(--lime-hot);}
+    .send-btn:disabled{opacity:0.3;}
+    .send-btn svg{width:18px;height:18px;fill:var(--bg);}
+
+    /* ── Comment-thread detail (reply publicly/privately) ── */
+    .comment-detail{flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px;}
+    .comment-poem-preview{width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--rule);}
+    .comment-box{background:var(--bg2);border:1px solid var(--rule);border-radius:10px;padding:14px;}
+    .comment-author{font-size:0.78rem;color:var(--lime);font-weight:600;margin-bottom:6px;}
+    .comment-text{font-family:var(--serif);font-style:italic;font-size:0.92rem;line-height:1.6;}
+    .view-poem-link{font-size:0.78rem;color:var(--sage);}
+    .reply-choices{display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--rule);}
+    .reply-choice-btn{flex:1;padding:11px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;border:1px solid var(--rule);background:var(--bg2);color:var(--white);}
+    .reply-choice-btn.active-choice{border-color:var(--lime);color:var(--lime);}
+    .reply-compose{display:none;flex-shrink:0;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:var(--bg2);border-top:2px solid var(--green);align-items:flex-end;}
+    .reply-compose.open{display:flex;}
+    .reply-compose textarea{flex:1;padding:11px 16px;border-radius:22px;background:var(--bg3);border:1.5px solid var(--sage);color:var(--white);font-family:var(--sans);font-size:0.9rem;resize:none;max-height:100px;min-height:42px;}
+    .reply-compose textarea:focus{outline:none;border-color:var(--lime);}
+
+    .loading{padding:50px 20px;text-align:center;color:var(--sage);font-size:0.85rem;}
+    .notif-wrap { position: relative; }
+    .notif-bell-btn {
+      background: none; border: none; font-size: 1.1rem; cursor: pointer;
+      opacity: 0.55; transition: opacity .2s, transform .2s; position: relative;
+      padding: 0; line-height: 1; color: inherit; font-family: inherit;
+    }
+    .notif-bell-btn:hover { opacity: 1; transform: scale(1.15); }
+    .notif-badge {
+      position: absolute; top: -6px; right: -8px;
+      background: #dc2626; color: #fff; font-size: 0.6rem; font-weight: 700;
+      min-width: 16px; height: 16px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; font-family: 'Inter', sans-serif;
+    }
+    .notif-dropdown {
+      display: none; position: absolute; top: calc(100% + 14px); right: 0;
+      width: 340px; max-width: 90vw; max-height: 480px;
+      background: var(--bg2); border: 1px solid var(--rule); border-radius: 10px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5); overflow: hidden;
+      flex-direction: column; z-index: 200;
+    }
+    .notif-dropdown.open { display: flex; }
+    .notif-dropdown-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; border-bottom: 1px solid var(--rule);
+      font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--white);
+    }
+    .notif-mark-all {
+      background: none; border: none; color: var(--lime); font-size: 0.72rem;
+      font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .notif-mark-all:hover { text-decoration: underline; }
+    .notif-list { overflow-y: auto; flex: 1; }
+    .notif-item {
+      display: block; padding: 12px 16px; border-bottom: 1px solid var(--rule);
+      cursor: pointer; transition: background .15s; text-align: left;
+    }
+    .notif-item:hover { background: var(--bg3); }
+    .notif-item.unread { background: rgba(127,255,61,0.08); }
+    .notif-item.unread::before {
+      content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--lime); margin-right: 6px; vertical-align: middle;
+    }
+    .notif-title { font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--white); margin-bottom: 3px; }
+    .notif-body { font-family: 'Inter', sans-serif; font-size: 0.76rem; color: var(--sage); line-height: 1.4; }
+    .notif-time { font-family: 'Inter', sans-serif; font-size: 0.65rem; color: var(--lime-hot); margin-top: 5px; }
+    .notif-empty, .notif-loading {
+      padding: 40px 20px; text-align: center; color: var(--sage);
+      font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem;
+    }
+
+    @media (max-width: 640px) {
+      .notif-dropdown { position: fixed; top: 68px; right: 10px; left: 10px; width: auto; max-width: none; }
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="header">
+    <a href="home.html" class="back-link">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Pen Africa
+    </a>
+    <p class="header-brand">Messages</p>
+      <div class="notif-wrap" id="notifWrap">
+        <button class="notif-bell-btn" id="notifBellBtn" title="Notifications">
+          🔔
+          <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-header">
+            <span>Notifications</span>
+            <button class="notif-mark-all" id="notifMarkAllBtn">Mark all read</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-loading">Loading…</div>
+          </div>
+        </div>
+      </div>
+    <div class="live-badge"><span class="live-dot"></span> Live</div>
+  </header>
+
+  <div class="body">
+
+    <!-- LIST VIEW -->
+    <div class="list-view" id="listView">
+      <div class="list-toolbar">
+        <button class="new-msg-btn" id="newMsgBtn">+ New Message</button>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search conversations…"/>
+      </div>
+      <div class="new-conv-panel" id="newConvPanel">
+        <input type="text" id="userSearchInput" placeholder="Search by pen name…"/>
+        <div id="userSearchResults"></div>
+      </div>
+      <div class="list-scroll" id="listScroll">
+        <div class="loading">Loading…</div>
+      </div>
+    </div>
+
+    <!-- THREAD VIEW (DM) -->
+    <div class="thread-view" id="threadView">
+      <div class="thread-header">
+        <button class="icon-btn" id="threadBackBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="avatar" id="threadAvatar"></div>
+        <div class="thread-name" id="threadName"></div>
+        <button class="icon-btn" id="threadMenuBtn">⋯</button>
+      </div>
+      <div class="thread-scroll" id="threadScroll">
+        <div class="loading">Loading messages…</div>
+      </div>
+      <div class="composer">
+        <textarea id="composerInput" placeholder="Write a message…" rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- COMMENT THREAD VIEW -->
+    <div class="thread-view" id="commentView">
+      <div class="thread-header">
+        <button class="icon-btn" id="commentBackBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="thread-name" id="commentPoemTitle"></div>
+      </div>
+      <div class="comment-detail" id="commentDetail"></div>
+      <div class="reply-compose" id="replyCompose">
+        <textarea id="replyInput" placeholder="Write your reply…" rows="1"></textarea>
+        <button class="send-btn" id="replySendBtn">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const SUPA_URL = "https://nefqvdfhkeovwuneeozg.supabase.co";
+  const SUPA_KEY = "sb_publishable_JLJ2a-Ks9LznxtOAYrtzEQ_Q6dzGsHh";
+  const client   = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  let currentUser = null;
+  let conversations = [];
+  let commentThreads = [];
+  let activeConversation = null;
+  let activeCommentItem = null;
+  let replyMode = null; // 'public' | 'private'
+  let realtimeChannel = null;
+
+  function escapeHtml(s) {
+    return (s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+  function timeShort(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+    let notifications = [];
+
+    function escapeHtmlNotif(s) {
+      return (s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function timeAgoNotif(dateStr) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "Just now";
+      if (mins < 60) return mins + "m ago";
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return hours + "h ago";
+      const days = Math.floor(hours / 24);
+      if (days < 7) return days + "d ago";
+      return new Date(dateStr).toLocaleDateString();
+    }
+
+    async function initNotifications(userId) {
+      await loadNotifications(userId);
+      wireNotificationEvents(userId);
+    }
+
+    async function loadNotifications(userId) {
+      const { data, error } = await client
+        .from("notifications")
+        .select("id, type, title, body, link_url, read, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      if (error) {
+        console.warn("Notifications load error:", error.message);
+        document.getElementById("notifList").innerHTML =
+          `<div class="notif-empty">Couldn't load notifications.</div>`;
+        return;
+      }
+
+      notifications = data || [];
+      renderNotifBadge();
+      renderNotifList();
+    }
+
+    function renderNotifBadge() {
+      const unreadCount = notifications.filter(n => !n.read).length;
+      const badge = document.getElementById("notifBadge");
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+        badge.style.display = "flex";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
+    function renderNotifList() {
+      const el = document.getElementById("notifList");
+      if (!notifications.length) {
+        el.innerHTML = `<div class="notif-empty">You're all caught up.</div>`;
+        return;
+      }
+      el.innerHTML = notifications.map(n => `
+        <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n.id}" data-link="${escapeHtmlNotif(n.link_url || '')}">
+          <p class="notif-title">${escapeHtmlNotif(n.title)}</p>
+          ${n.body ? `<p class="notif-body">${escapeHtmlNotif(n.body)}</p>` : ''}
+          <p class="notif-time">${timeAgoNotif(n.created_at)}</p>
+        </div>
+      `).join("");
+
+      el.querySelectorAll(".notif-item").forEach(item => {
+        item.addEventListener("click", async () => {
+          const id = parseInt(item.dataset.id);
+          const link = item.dataset.link;
+          await markNotifRead(id);
+          if (link) window.location.href = link;
+        });
+      });
+    }
+
+    async function markNotifRead(id) {
+      const notif = notifications.find(n => n.id === id);
+      if (!notif || notif.read) return;
+      notif.read = true;
+      renderNotifBadge();
+      renderNotifList();
+      await client.from("notifications").update({ read: true }).eq("id", id);
+    }
+
+    async function markAllNotifsRead(userId) {
+      const unread = notifications.filter(n => !n.read);
+      if (!unread.length) return;
+      notifications.forEach(n => n.read = true);
+      renderNotifBadge();
+      renderNotifList();
+      await client.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
+    }
+
+    function wireNotificationEvents(userId) {
+      const bellBtn = document.getElementById("notifBellBtn");
+      const dropdown = document.getElementById("notifDropdown");
+      const wrap = document.getElementById("notifWrap");
+
+      bellBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("open");
+      });
+
+      document.getElementById("notifMarkAllBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        markAllNotifsRead(userId);
+      });
+
+      // Close dropdown when clicking anywhere outside it
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) dropdown.classList.remove("open");
+      });
+    }
+
+  init();
+
+  async function init() {
+    const { data: sessionData } = await client.auth.getSession();
+    currentUser = sessionData?.session?.user ?? null;
+    if (!currentUser) { window.location.href = "login.html"; return; }
+    initNotifications(currentUser.id);
+
+    await Promise.all([loadConversations(), loadCommentThreads()]);
+    renderList();
+
+    wireListEvents();
+    subscribeRealtime();
+
+    // Deep-link support: ?conversation=<id> or ?startWith=<userId>&penName=<name>
+    const params = new URLSearchParams(window.location.search);
+    const directConvId = params.get("conversation");
+    const startWithId = params.get("startWith");
+    const startWithPenName = params.get("penName");
+
+    if (directConvId) {
+      const match = conversations.find(c => c.id === directConvId);
+      if (match) openThread(match);
+    } else if (startWithId) {
+      const existing = conversations.find(c => c.user_a_id === startWithId || c.user_b_id === startWithId);
+      if (existing) openThread(existing);
+      else openNewThread(startWithId, startWithPenName || "Unknown", null);
+    }
+  }
+
+  /* ══════ DATA LOADING ══════ */
+  async function loadConversations() {
+    const { data, error } = await client
+      .from("conversations")
+      .select("id, user_a_id, user_b_id, last_message_at")
+      .or(`user_a_id.eq.${currentUser.id},user_b_id.eq.${currentUser.id}`)
+      .order("last_message_at", { ascending: false });
+
+    if (error) { conversations = []; return; }
+    conversations = data || [];
+    if (!conversations.length) return;
+
+    const otherIds = conversations.map(c => c.user_a_id === currentUser.id ? c.user_b_id : c.user_a_id);
+    const { data: profiles } = await client.from("profiles").select("id, pen_name, profile_picture").in("id", otherIds);
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+
+    await Promise.all(conversations.map(async (conv) => {
+      const otherId = conv.user_a_id === currentUser.id ? conv.user_b_id : conv.user_a_id;
+      conv.other = profileMap[otherId] || { pen_name: "Unknown" };
+      conv.itemType = "conversation";
+      conv.sortTime = conv.last_message_at;
+
+      const [lastMsgRes, unreadRes] = await Promise.all([
+        client.from("messages").select("content, sender_id").eq("conversation_id", conv.id).order("created_at", { ascending: false }).limit(1),
+        client.from("messages").select("id", { count: "exact", head: true }).eq("conversation_id", conv.id).eq("read", false).neq("sender_id", currentUser.id)
+      ]);
+      conv.lastMessage = lastMsgRes.data?.[0] || null;
+      conv.unreadCount = unreadRes.count || 0;
+    }));
+  }
+
+  async function loadCommentThreads() {
+    const { data, error } = await client
+      .from("comments")
+      .select("id, poem_id, pen_name, user_id, content, created_at, poems!inner(title, image_url, user_id)")
+      .eq("poems.user_id", currentUser.id)
+      .is("parent_comment_id", null)
+      .neq("user_id", currentUser.id)
+      .order("created_at", { ascending: false });
+
+    if (error) { commentThreads = []; return; }
+
+    commentThreads = (data || []).map(c => ({
+      itemType: "comment_thread",
+      commentId: c.id,
+      poemId: c.poem_id,
+      poemTitle: c.poems?.title || "Untitled",
+      poemImageUrl: c.poems?.image_url || null,
+      commenterPenName: c.pen_name,
+      commenterId: c.user_id,
+      content: c.content,
+      sortTime: c.created_at
+    }));
+  }
+
+  /* ══════ LIST RENDERING ══════ */
+  function renderList(filterQuery) {
+    let merged = [...conversations, ...commentThreads];
+    merged.sort((a, b) => new Date(b.sortTime || 0) - new Date(a.sortTime || 0));
+
+    if (filterQuery) {
+      const q = filterQuery.toLowerCase();
+      merged = merged.filter(item => {
+        const name = item.itemType === "conversation" ? (item.other?.pen_name || "") : (item.commenterPenName || "");
+        return name.toLowerCase().includes(q);
+      });
+    }
+
+    const el = document.getElementById("listScroll");
+    if (!merged.length) {
+      el.innerHTML = `<div class="empty-list">No conversations yet. Search for a poet above, or visit a profile to say hello.</div>`;
+      return;
+    }
+
+    el.innerHTML = merged.map((item, idx) => {
+      if (item.itemType === "conversation") {
+        const initial = (item.other.pen_name || "?")[0].toUpperCase();
+        const avatar = item.other.profile_picture ? `<img src="${escapeHtml(item.other.profile_picture)}" alt=""/>` : initial;
+        const preview = item.lastMessage
+          ? (item.lastMessage.sender_id === currentUser.id ? "You: " : "") + escapeHtml(item.lastMessage.content).slice(0, 40)
+          : "Say hello…";
+        return `
+          <div class="conv-item" data-idx="${idx}" data-kind="conv">
+            <div class="avatar">${avatar}</div>
+            <div class="conv-body">
+              <p class="conv-name">${escapeHtml(item.other.pen_name || "Unknown")}</p>
+              <p class="conv-preview">${preview}</p>
+            </div>
+            ${item.unreadCount > 0 ? '<div class="unread-dot"></div>' : ''}
+          </div>`;
+      } else {
+        const poemThumb = item.poemImageUrl ? `<img src="${escapeHtml(item.poemImageUrl)}" alt=""/>` : "✦";
+        return `
+          <div class="conv-item comment-item" data-idx="${idx}" data-kind="comment">
+            <div class="avatar">${poemThumb}</div>
+            <div class="conv-body">
+              <p class="conv-name"><span class="conv-tag">Comment</span>on "${escapeHtml(item.poemTitle)}"</p>
+              <p class="conv-preview">${escapeHtml(item.commenterPenName)}: ${escapeHtml(item.content).slice(0, 36)}</p>
+            </div>
+          </div>`;
+      }
+    }).join("");
+
+    // Store the merged+filtered array for click lookups
+    el.dataset.merged = "1";
+    window.__mergedListCache = merged;
+
+    el.querySelectorAll(".conv-item").forEach(node => {
+      node.addEventListener("click", () => {
+        const idx = parseInt(node.dataset.idx);
+        const item = window.__mergedListCache[idx];
+        if (item.itemType === "conversation") openThread(item);
+        else openCommentDetail(item);
+      });
+    });
+  }
+
+  /* ══════ VIEW SWITCHING ══════ */
+  function showList() {
+    document.getElementById("threadView").classList.remove("active");
+    document.getElementById("commentView").classList.remove("active");
+    activeConversation = null;
+    activeCommentItem = null;
+  }
+
+  /* ══════ DM THREAD ══════ */
+  async function openThread(conv) {
+    activeConversation = conv;
+    document.getElementById("threadView").classList.add("active");
+    document.getElementById("commentView").classList.remove("active");
+
+    const initial = (conv.other.pen_name || "?")[0].toUpperCase();
+    document.getElementById("threadAvatar").innerHTML = conv.other.profile_picture
+      ? `<img src="${escapeHtml(conv.other.profile_picture)}" alt=""/>` : initial;
+    document.getElementById("threadName").textContent = conv.other.pen_name || "Unknown";
+    document.getElementById("threadMenuBtn").onclick = () => confirmBlock(conv.other.id, conv.other.pen_name);
+
+    await loadThreadMessages(conv.id);
+    await client.rpc("mark_conversation_read", { p_conversation_id: conv.id });
+    conv.unreadCount = 0;
+  }
+
+  function openNewThread(userId, penName, profilePicture) {
+    activeConversation = { id: null, other: { id: userId, pen_name: penName, profile_picture: profilePicture } };
+    document.getElementById("threadView").classList.add("active");
+    document.getElementById("commentView").classList.remove("active");
+
+    const initial = (penName || "?")[0].toUpperCase();
+    document.getElementById("threadAvatar").innerHTML = profilePicture ? `<img src="${escapeHtml(profilePicture)}" alt=""/>` : initial;
+    document.getElementById("threadName").textContent = penName || "Unknown";
+    document.getElementById("threadMenuBtn").onclick = () => confirmBlock(userId, penName);
+
+    document.getElementById("threadScroll").innerHTML =
+      `<div class="loading">This is the start of your conversation with ${escapeHtml(penName)}.</div>`;
+    document.getElementById("composerInput").value = "";
+    document.getElementById("composerInput").focus();
+  }
+
+  async function loadThreadMessages(conversationId) {
+    const { data, error } = await client
+      .from("messages")
+      .select("id, sender_id, content, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    const el = document.getElementById("threadScroll");
+    if (error) { el.innerHTML = `<div class="loading">Couldn't load messages.</div>`; return; }
+
+    el.innerHTML = (data || []).map(renderBubble).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function renderBubble(m) {
+    const mine = m.sender_id === currentUser.id;
+    return `
+      <div class="bubble-row ${mine ? 'mine' : 'theirs'}">
+        <div>
+          <div class="bubble">${escapeHtml(m.content)}</div>
+          <div class="bubble-time">${timeShort(m.created_at)}</div>
+        </div>
+      </div>`;
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById("composerInput");
+    const content = input.value.trim();
+    if (!content || !activeConversation) return;
+
+    const btn = document.getElementById("sendBtn");
+    if (btn.disabled) return;
+    btn.disabled = true;
+    input.value = "";
+
+    const recipientId = activeConversation.other.id;
+    const { data, error } = await client.rpc("send_message", { p_recipient_id: recipientId, p_content: content });
+
+    btn.disabled = false;
+
+    if (error) {
+      alert("Couldn't send: " + error.message);
+      input.value = content;
+      return;
+    }
+
+    if (!activeConversation.id) {
+      // First message in a brand new conversation — reload list to pick up the real conversation row
+      activeConversation.id = data.conversation_id;
+      await loadConversations();
+    }
+
+    const el = document.getElementById("threadScroll");
+    if (el.querySelector(".loading")) el.innerHTML = "";
+    el.insertAdjacentHTML("beforeend", renderBubble({ sender_id: currentUser.id, content, created_at: new Date().toISOString() }));
+    el.scrollTop = el.scrollHeight;
+  }
+
+  /* ══════ NEW CONVERSATION SEARCH ══════ */
+  function wireListEvents() {
+    document.getElementById("searchInput").addEventListener("input", (e) => renderList(e.target.value));
+
+    document.getElementById("newMsgBtn").addEventListener("click", () => {
+      document.getElementById("newConvPanel").classList.toggle("open");
+      document.getElementById("userSearchInput").focus();
+    });
+
+    let debounce = null;
+    document.getElementById("userSearchInput").addEventListener("input", (e) => {
+      clearTimeout(debounce);
+      const q = e.target.value.trim();
+      const resultsEl = document.getElementById("userSearchResults");
+      if (!q) { resultsEl.innerHTML = ""; return; }
+
+      debounce = setTimeout(async () => {
+        const { data, error } = await client.from("profiles").select("id, pen_name, profile_picture")
+          .ilike("pen_name", `%${q}%`).neq("id", currentUser.id).limit(15);
+
+        if (error || !data || !data.length) {
+          resultsEl.innerHTML = `<div class="empty-hint">No poets found.</div>`;
+          return;
+        }
+        resultsEl.innerHTML = data.map(u => {
+          const initial = (u.pen_name || "?")[0].toUpperCase();
+          const avatar = u.profile_picture ? `<img src="${escapeHtml(u.profile_picture)}" alt=""/>` : initial;
+          return `<div class="user-result" data-id="${u.id}" data-name="${escapeHtml(u.pen_name)}" data-pic="${escapeHtml(u.profile_picture||'')}">
+            <div class="avatar">${avatar}</div><span>${escapeHtml(u.pen_name || "Unnamed")}</span>
+          </div>`;
+        }).join("");
+
+        resultsEl.querySelectorAll(".user-result").forEach(node => {
+          node.addEventListener("click", () => {
+            const id = node.dataset.id, name = node.dataset.name, pic = node.dataset.pic || null;
+            document.getElementById("newConvPanel").classList.remove("open");
+            document.getElementById("userSearchInput").value = "";
+            resultsEl.innerHTML = "";
+
+            const existing = conversations.find(c => c.user_a_id === id || c.user_b_id === id);
+            if (existing) openThread(existing);
+            else openNewThread(id, name, pic);
+          });
+        });
+      }, 300);
+    });
+
+    document.getElementById("threadBackBtn").addEventListener("click", showList);
+    document.getElementById("commentBackBtn").addEventListener("click", showList);
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    document.getElementById("composerInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+  }
+
+  /* ══════ COMMENT THREAD DETAIL ══════ */
+  function openCommentDetail(item) {
+    activeCommentItem = item;
+    replyMode = null;
+    document.getElementById("commentView").classList.add("active");
+    document.getElementById("threadView").classList.remove("active");
+    document.getElementById("commentPoemTitle").textContent = `Comment on "${item.poemTitle}"`;
+
+    document.getElementById("commentDetail").innerHTML = `
+      ${item.poemImageUrl ? `<img class="comment-poem-preview" src="${escapeHtml(item.poemImageUrl)}" alt=""/>` : ''}
+      <div class="comment-box">
+        <p class="comment-author">${escapeHtml(item.commenterPenName)} commented:</p>
+        <p class="comment-text">${escapeHtml(item.content)}</p>
+      </div>
+      <a class="view-poem-link" href="poem.html?id=${item.poemId}">View full poem →</a>
+      <div class="reply-choices">
+        <button class="reply-choice-btn" id="publicChoiceBtn">Reply Publicly</button>
+        <button class="reply-choice-btn" id="privateChoiceBtn">Reply Privately</button>
+      </div>
+    `;
+
+    document.getElementById("publicChoiceBtn").addEventListener("click", () => setReplyMode("public"));
+    document.getElementById("privateChoiceBtn").addEventListener("click", () => setReplyMode("private"));
+    document.getElementById("replyCompose").classList.remove("open");
+  }
+
+  function setReplyMode(mode) {
+    replyMode = mode;
+    document.getElementById("publicChoiceBtn").classList.toggle("active-choice", mode === "public");
+    document.getElementById("privateChoiceBtn").classList.toggle("active-choice", mode === "private");
+    document.getElementById("replyCompose").classList.add("open");
+    document.getElementById("replyInput").focus();
+  }
+
+  document.getElementById("replySendBtn").addEventListener("click", async () => {
+    const input = document.getElementById("replyInput");
+    const content = input.value.trim();
+    if (!content || !activeCommentItem || !replyMode) return;
+
+    const btn = document.getElementById("replySendBtn");
+    if (btn.disabled) return;
+    btn.disabled = true;
+
+    if (replyMode === "public") {
+      const { error } = await client.rpc("author_reply_to_comment", {
+        p_comment_id: activeCommentItem.commentId, p_content: content
+      });
+      btn.disabled = false;
+      if (error) { alert("Couldn't reply: " + error.message); return; }
+      input.value = "";
+      alert("Public reply posted — view it on the poem page.");
+      await loadCommentThreads();
+      renderList();
+      showList();
+    } else {
+      const { data, error } = await client.rpc("send_message", {
+        p_recipient_id: activeCommentItem.commenterId, p_content: content
+      });
+      btn.disabled = false;
+      if (error) { alert("Couldn't send: " + error.message); return; }
+      input.value = "";
+      await loadConversations();
+      const conv = conversations.find(c => c.id === data.conversation_id);
+      renderList();
+      if (conv) openThread(conv);
+    }
+  });
+  document.getElementById("replyInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.getElementById("replySendBtn").click(); }
+  });
+
+  /* ══════ BLOCKING ══════ */
+  async function confirmBlock(userId, penName) {
+    if (!confirm(`Block ${penName}? They won't be able to message you, and you won't be able to message them.`)) return;
+    const { data, error } = await client.rpc("toggle_message_block", { p_target_user_id: userId });
+    if (error) { alert("Couldn't block: " + error.message); return; }
+    if (data.now_blocked) {
+      alert(`${penName} has been blocked.`);
+      showList();
+      await loadConversations();
+      renderList();
+    }
+  }
+
+  /* ══════ REALTIME ══════ */
+  function subscribeRealtime() {
+    realtimeChannel = client.channel("messages-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => handleIncoming(payload.new))
+      .subscribe();
+  }
+
+  async function handleIncoming(msg) {
+    if (msg.sender_id === currentUser.id) return;
+
+    let conv = conversations.find(c => c.id === msg.conversation_id);
+    if (!conv) {
+      await loadConversations();
+      renderList();
+      return;
+    }
+
+    if (activeConversation && activeConversation.id === msg.conversation_id) {
+      const el = document.getElementById("threadScroll");
+      el.insertAdjacentHTML("beforeend", renderBubble(msg));
+      el.scrollTop = el.scrollHeight;
+      await client.rpc("mark_conversation_read", { p_conversation_id: msg.conversation_id });
+    } else {
+      conv.unreadCount = (conv.unreadCount || 0) + 1;
+    }
+
+    conv.lastMessage = { content: msg.content, sender_id: msg.sender_id };
+    conv.sortTime = new Date().toISOString();
+    renderList(document.getElementById("searchInput").value);
+  }
+
+  window.addEventListener("beforeunload", () => {
+    if (realtimeChannel) client.removeChannel(realtimeChannel);
+  });
+</script>
+</body>
+</html>

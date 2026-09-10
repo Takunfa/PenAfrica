@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pen Africa — Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #ffffff;
+      --bg2:    #f0ebff;
+      --bg3:    #e9d5ff;
+      --purple: #7C3AED;
+      --violet: #A78BFA;
+      --rule:   rgba(109,40,217,0.15);
+      --text:   #1a0840;
+      --muted:  #5b21b6;
+      --danger: #ef4444;
+      --serif:  'Cormorant Garamond', serif;
+      --sans:   'Inter', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, #f0ebff 12%, #ddd6fe 28%, #8b5cf6 50%, #4c1d95 70%, #1a0840 85%, #07030f 100%) fixed;
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+    img { display: block; }
+
+    /* ══════════ HEADER ══════════ */
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 52px;
+      height: 68px;
+      border-bottom: 1px solid var(--rule);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .back-link {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); transition: color .2s; justify-self: start;
+    }
+    .back-link:hover { color: var(--violet); }
+    .back-link svg { width: 14px; height: 14px; }
+    .header-brand {
+      font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.28em; text-transform: uppercase; text-align: center;
+      background: linear-gradient(90deg, #1a0840, #7C3AED, #1a0840);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .header-pen { justify-self: end; font-family: var(--serif); font-style: italic; font-size: 1rem; color: var(--violet); }
+
+    /* ══════════ PROFILE BANNER ══════════ */
+    .profile-banner {
+      position: relative;
+      height: 220px;
+      background: linear-gradient(135deg, #ede9fe 0%, #c4b5fd 40%, #ddd6fe 100%);
+      overflow: hidden;
+    }
+    .profile-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 120% at 20% 60%, rgba(124,58,237,0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 20%, rgba(167,139,250,0.12) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .banner-pattern {
+      position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(
+        90deg,
+        rgba(167,139,250,0.04) 0px,
+        rgba(167,139,250,0.04) 1px,
+        transparent 1px,
+        transparent 60px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        rgba(167,139,250,0.04) 0px,
+        rgba(167,139,250,0.04) 1px,
+        transparent 1px,
+        transparent 60px
+      );
+    }
+    .banner-verse {
+      position: absolute; bottom: 24px; right: 52px;
+      font-family: var(--serif); font-style: italic;
+      font-size: 0.9rem; color: rgba(167,139,250,0.3);
+      letter-spacing: 0.04em;
+    }
+
+    /* ══════════ PROFILE IDENTITY BLOCK ══════════ */
+    .profile-identity {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 52px;
+      position: relative;
+    }
+    .avatar-wrap {
+      position: absolute;
+      top: -72px;
+      left: 52px;
+    }
+    .avatar-ring {
+      width: 144px; height: 144px;
+      border-radius: 50%; padding: 3px;
+      background: linear-gradient(135deg, #7C3AED, #A78BFA, #7C3AED);
+      box-shadow: 0 0 40px rgba(124,58,237,0.4);
+      cursor: pointer; position: relative;
+    }
+    .avatar-inner {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .avatar-inner img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+    }
+    .avatar-placeholder {
+      font-family: var(--serif); font-size: 3rem; font-weight: 700;
+      color: var(--violet); line-height: 1;
+    }
+    .avatar-edit-overlay {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .2s; cursor: pointer;
+    }
+    .avatar-ring:hover .avatar-edit-overlay { opacity: 1; }
+    .avatar-edit-overlay svg { width: 22px; height: 22px; color: #fff; }
+    .avatar-edit-overlay span { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; margin-top: 4px; }
+    #avatarInput { display: none; }
+
+    .identity-body {
+      padding-top: 96px;
+      padding-bottom: 36px;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+      flex-wrap: wrap;
+    }
+    .identity-text { flex: 1; }
+    .profile-pen-name {
+      font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 700; color: #fff; line-height: 1.1; margin-bottom: 4px;
+    }
+    .profile-full-name {
+      font-size: 0.85rem; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 12px;
+    }
+    .profile-bio {
+      font-family: var(--serif); font-style: italic;
+      font-size: 1.05rem; color: var(--muted); line-height: 1.7;
+      max-width: 540px;
+    }
+
+    .profile-actions { display: flex; gap: 10px; flex-shrink: 0; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 22px;
+      font-family: var(--sans); font-size: 0.75rem;
+      font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      border-radius: 3px; cursor: pointer; transition: all .22s;
+      border: 1px solid transparent;
+    }
+    .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .btn-edit {
+      background: transparent; color: var(--violet);
+      border-color: rgba(167,139,250,0.4);
+    }
+    .btn-edit:hover { border-color: var(--violet); color: #fff; transform: translateY(-2px); }
+    .btn-save {
+      background: var(--purple); color: #fff;
+      border-color: var(--purple); display: none;
+    }
+    .btn-save:hover { background: #6d28d9; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.4); }
+    .btn-cancel {
+      background: transparent; color: var(--muted);
+      border-color: rgba(149,133,184,0.25); display: none;
+    }
+    .btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+    .btn-delete {
+      background: transparent; color: #f87171;
+      border-color: rgba(248,113,113,0.3);
+    }
+    .btn-delete:hover { background: rgba(239,68,68,0.1); border-color: #ef4444; transform: translateY(-2px); }
+    .btn-follow {
+      background: var(--purple); color: #fff;
+      border-color: var(--purple);
+    }
+    .btn-follow:hover { background: #6d28d9; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.4); }
+    .btn-follow.following {
+      background: transparent; color: var(--violet);
+      border-color: rgba(167,139,250,0.4);
+    }
+    .btn-follow.following:hover { border-color: #f87171; color: #f87171; }
+    .btn-message {
+      background: transparent; color: var(--violet);
+      border-color: rgba(167,139,250,0.4);
+    }
+    .btn-message:hover { background: rgba(167,139,250,0.1); border-color: var(--violet); transform: translateY(-2px); }
+    .btn-block {
+      background: transparent; color: var(--muted);
+      border-color: var(--rule);
+    }
+    .btn-block:hover { background: rgba(239,68,68,0.08); border-color: #f87171; color: #f87171; }
+    .btn-block.blocked {
+      background: rgba(239,68,68,0.12); color: #f87171; border-color: #f87171;
+    }
+
+    /* ══════════ STATS ROW ══════════ */
+    .stats-row {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      background: var(--bg2);
+    }
+    .stats-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 52px;
+      display: flex;
+    }
+    .stat-item {
+      flex: 1; padding: 24px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      border-right: 1px solid var(--rule);
+      transition: background .2s;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-item:hover { background: rgba(124,58,237,0.05); }
+    .stat-number {
+      font-family: var(--serif); font-size: 2rem; font-weight: 700;
+      color: #fff; line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.65rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+    }
+
+    /* ══════════ MAIN CONTENT GRID ══════════ */
+    .content-area {
+      max-width: 1100px; margin: 0 auto;
+      padding: 48px 52px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 40px;
+    }
+
+    /* ══════════ SECTION HEADERS ══════════ */
+    .section-eyebrow {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase;
+      color: var(--violet); margin-bottom: 20px;
+    }
+    .section-eyebrow::after { content:''; flex: 1; height: 1px; background: var(--rule); }
+
+    /* ══════════ LEFT PANEL — INFO ══════════ */
+    .info-panel {}
+    .info-card {
+      background: var(--bg2);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .info-row {
+      display: flex; align-items: flex-start;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--rule);
+      gap: 14px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row svg { width: 15px; height: 15px; color: var(--violet); flex-shrink: 0; margin-top: 1px; }
+
+    /* ══════════ TROPHY CASE ══════════ */
+    .trophy-case {
+      background: var(--bg2);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 20px;
+      margin: 0 32px 28px;
+    }
+    .trophy-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 12px; margin-top: 16px;
+    }
+    .trophy-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      text-align: center; cursor: default;
+    }
+    .trophy-icon { font-size: 1.8rem; }
+    .trophy-count { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+    .trophy-item[title] { cursor: help; }
+    .info-content {}
+    .info-label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .info-value { font-size: 0.9rem; color: var(--text); }
+
+    /* edit inputs */
+    .edit-input, .edit-textarea {
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 3px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.88rem;
+      width: 100%;
+      outline: none;
+      transition: border-color .2s;
+      display: none;
+    }
+    .edit-input:focus, .edit-textarea:focus {
+      border-color: var(--violet);
+      background: rgba(124,58,237,0.12);
+    }
+    .edit-textarea { resize: vertical; min-height: 80px; font-family: var(--serif); font-style: italic; }
+
+    /* ══════════ RIGHT PANEL ══════════ */
+    .right-panel {}
+
+    /* Poems grid */
+    .poems-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px;
+    }
+    .poem-card {
+      background: var(--bg2); border: 1px solid var(--rule);
+      border-radius: 4px; padding: 20px;
+      position: relative; overflow: hidden;
+      transition: border-color .2s, transform .2s;
+      cursor: pointer;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .poem-card-thumb {
+      width: 44px; height: 44px; border-radius: 50%;
+      overflow: hidden; flex-shrink: 0;
+      border: 2px solid rgba(124,58,237,0.4);
+      background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--serif); font-size: 1.1rem; color: var(--violet);
+    }
+    .poem-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .poem-card-body { min-width: 0; flex: 1; }
+    .poem-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 3px; height: 0;
+      background: linear-gradient(180deg, var(--purple), transparent);
+      transition: height .35s ease;
+    }
+    .poem-card:hover::before { height: 100%; }
+    .poem-card:hover { border-color: rgba(167,139,250,0.4); transform: translateY(-3px); }
+    .poem-card-title {
+      font-family: var(--serif); font-size: 1.1rem; font-weight: 600;
+      color: #fff; margin-bottom: 6px; line-height: 1.3;
+    }
+    .poem-card-excerpt {
+      font-family: var(--serif); font-style: italic;
+      font-size: 0.85rem; color: var(--muted); line-height: 1.6;
+    }
+    .poem-card-date {
+      font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: rgba(149,133,184,0.5); margin-top: 12px;
+    }
+    .poems-empty {
+      grid-column: 1 / -1;
+      padding: 40px; text-align: center;
+      border: 1px dashed rgba(167,139,250,0.2); border-radius: 4px;
+      color: var(--muted); font-family: var(--serif); font-style: italic;
+    }
+
+    /* ══════════ DELETE MODAL ══════════ */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+      z-index: 200; display: none;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      padding: 48px 40px;
+      max-width: 420px; width: 90%;
+      text-align: center;
+    }
+    .modal-icon { font-size: 2.5rem; margin-bottom: 20px; }
+    .modal-title {
+      font-family: var(--serif); font-size: 1.8rem; font-weight: 600;
+      color: #fff; margin-bottom: 12px;
+    }
+    .modal-body { font-size: 0.88rem; color: var(--muted); line-height: 1.7; margin-bottom: 32px; }
+    .modal-body strong { color: #f87171; }
+    .modal-actions { display: flex; gap: 12px; justify-content: center; }
+    .btn-danger {
+      background: #ef4444; color: #fff;
+      border: 1px solid #ef4444; padding: 11px 26px;
+    }
+    .btn-danger:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(239,68,68,0.4); }
+
+    /* ══════════ TOAST ══════════ */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(16px);
+      background: var(--bg3); border: 1px solid var(--rule);
+      border-radius: 4px; padding: 14px 28px;
+      font-size: 0.82rem; letter-spacing: 0.06em;
+      color: var(--text); opacity: 0;
+      transition: all .3s ease;
+      z-index: 300; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(124,58,237,0.5); color: var(--violet); }
+    .toast.error { border-color: rgba(239,68,68,0.5); color: #f87171; }
+
+    /* ══════════ LOADING ══════════ */
+    .page-loader {
+      position: fixed; inset: 0; z-index: 500;
+      background: #ffffff;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .loader-ring {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 2px solid rgba(124,58,237,0.15);
+      border-top-color: var(--violet);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text {
+      font-family: var(--serif); font-style: italic;
+      font-size: 0.9rem; color: var(--muted);
+    }
+
+    /* ══════════ RESPONSIVE ══════════ */
+    @media(max-width: 900px) {
+      .header { padding: 0 24px; }
+      .profile-identity { padding: 0 24px; }
+      .avatar-wrap { left: 24px; }
+      .stats-inner { padding: 0 24px; }
+      .content-area { padding: 32px 24px; grid-template-columns: 1fr; }
+      .poems-grid { grid-template-columns: 1fr; }
+      .banner-verse { display: none; }
+    }
+    @media(max-width: 600px) {
+      .profile-actions { flex-wrap: wrap; }
+      .stat-label { font-size: 0.58rem; letter-spacing: 0.12em; }
+      .stat-number { font-size: 1.5rem; }
+      .identity-body { flex-direction: column; align-items: flex-start; }
+    }
+    .notif-wrap { position: relative; }
+    .notif-bell-btn {
+      background: none; border: none; font-size: 1.1rem; cursor: pointer;
+      opacity: 0.55; transition: opacity .2s, transform .2s; position: relative;
+      padding: 0; line-height: 1; color: inherit; font-family: inherit;
+    }
+    .notif-bell-btn:hover { opacity: 1; transform: scale(1.15); }
+    .notif-badge {
+      position: absolute; top: -6px; right: -8px;
+      background: #dc2626; color: #fff; font-size: 0.6rem; font-weight: 700;
+      min-width: 16px; height: 16px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; font-family: 'Inter', sans-serif;
+    }
+    .notif-dropdown {
+      display: none; position: absolute; top: calc(100% + 14px); right: 0;
+      width: 340px; max-width: 90vw; max-height: 480px;
+      background: #fff; border: 1px solid var(--rule); border-radius: 10px;
+      box-shadow: 0 16px 40px rgba(26,8,64,0.18); overflow: hidden;
+      flex-direction: column; z-index: 200;
+    }
+    .notif-dropdown.open { display: flex; }
+    .notif-dropdown-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; border-bottom: 1px solid var(--rule);
+      font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--text);
+    }
+    .notif-mark-all {
+      background: none; border: none; color: var(--purple); font-size: 0.72rem;
+      font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .notif-mark-all:hover { text-decoration: underline; }
+    .notif-list { overflow-y: auto; flex: 1; }
+    .notif-item {
+      display: block; padding: 12px 16px; border-bottom: 1px solid var(--rule);
+      cursor: pointer; transition: background .15s; text-align: left;
+    }
+    .notif-item:hover { background: var(--bg2); }
+    .notif-item.unread { background: rgba(124,58,237,0.05); }
+    .notif-item.unread::before {
+      content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--purple); margin-right: 6px; vertical-align: middle;
+    }
+    .notif-title { font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .notif-body { font-family: 'Inter', sans-serif; font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+    .notif-time { font-family: 'Inter', sans-serif; font-size: 0.65rem; color: var(--violet); margin-top: 5px; }
+    .notif-empty, .notif-loading {
+      padding: 40px 20px; text-align: center; color: var(--muted);
+      font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem;
+    }
+
+    @media (max-width: 640px) {
+      .notif-dropdown { position: fixed; top: 68px; right: 10px; left: 10px; width: auto; max-width: none; }
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- PAGE LOADER -->
+<div class="page-loader" id="pageLoader">
+  <div class="loader-ring"></div>
+  <p class="loader-text">Reading your verses…</p>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <a class="back-link" href="home.html">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M10 3L5 8l5 5"/>
+    </svg>
+    Home
+  </a>
+  <span class="header-brand">Pen Africa</span>
+  <span class="header-pen" id="headerPenName">—</span>
+      <div class="notif-wrap" id="notifWrap">
+        <button class="notif-bell-btn" id="notifBellBtn" title="Notifications">
+          🔔
+          <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-header">
+            <span>Notifications</span>
+            <button class="notif-mark-all" id="notifMarkAllBtn">Mark all read</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-loading">Loading…</div>
+          </div>
+        </div>
+      </div>
+</header>
+
+<!-- BANNER -->
+<div class="profile-banner">
+  <div class="banner-pattern"></div>
+  <p class="banner-verse" id="bannerVerse">"Words are the ink of the soul"</p>
+</div>
+
+<!-- IDENTITY BLOCK -->
+<section style="background: var(--bg); border-bottom: 1px solid var(--rule);">
+  <div class="profile-identity">
+    <!-- AVATAR -->
+    <div class="avatar-wrap">
+      <div class="avatar-ring" onclick="document.getElementById('avatarInput').click()">
+        <div class="avatar-inner">
+          <img id="avatarImg" src="" alt="" style="display:none;">
+          <span class="avatar-placeholder" id="avatarInitial">?</span>
+        </div>
+        <div class="avatar-edit-overlay">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15.232 5.232l3.536 3.536M9 13l6.5-6.5a2 2 0 112.83 2.83L11.83 15.83 9 16.5l.67-2.83z"/>
+          </svg>
+          <span>Change</span>
+        </div>
+      </div>
+      <input type="file" id="avatarInput" accept="image/*">
+    </div>
+
+    <div class="identity-body">
+      <div class="identity-text">
+        <h1 class="profile-pen-name" id="displayPenName">Loading…</h1>
+        <p class="profile-full-name" id="displayFullName"></p>
+        <p class="profile-bio" id="displayBio"></p>
+      </div>
+
+      <div class="profile-actions">
+        <button class="btn btn-follow" id="followBtn" onclick="toggleFollowAction()" style="display:none;">
+          Follow
+        </button>
+        <button class="btn btn-message" id="messageBtn" onclick="goToMessageThisUser()" style="display:none;">
+          Message
+        </button>
+        <button class="btn btn-block" id="blockBtn" onclick="toggleBlockThisUser()" style="display:none;">
+          Block
+        </button>
+        <button class="btn btn-edit" id="editBtn" onclick="startEdit()" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Edit Profile
+        </button>
+        <button class="btn btn-save" id="saveBtn" onclick="saveProfile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+          Save Profile
+        </button>
+        <button class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()">Cancel</button>
+        <button class="btn btn-delete" id="deleteBtn" onclick="openDeleteModal()" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          </svg>
+          Delete Profile
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS ROW -->
+<div class="stats-row">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <span class="stat-number" id="statPoems">0</span>
+      <span class="stat-label">Poems</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="statLikes">0</span>
+      <span class="stat-label">Likes</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="statFollowers">0</span>
+      <span class="stat-label">Followers</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="statFollowing">0</span>
+      <span class="stat-label">Following</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- TROPHY CASE — hidden entirely if the profile has zero trophies -->
+<div class="trophy-case" id="trophyCase" style="display:none;">
+  <p class="section-eyebrow">Trophy Case</p>
+  <div class="trophy-grid" id="trophyGrid"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content-area">
+
+  <!-- LEFT — PERSONAL INFO -->
+  <aside class="info-panel">
+    <p class="section-eyebrow">Personal Info</p>
+    <div class="info-card">
+
+      <!-- Full Name -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Full Name</p>
+          <p class="info-value" id="infoName">—</p>
+          <input class="edit-input" id="editName" type="text" placeholder="Full name">
+        </div>
+      </div>
+
+      <!-- Pen Name -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15.232 5.232l3.536 3.536M9 13l6.5-6.5a2 2 0 112.83 2.83L11.83 15.83 9 16.5l.67-2.83z"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Pen Name</p>
+          <p class="info-value" id="infoPenName">—</p>
+          <input class="edit-input" id="editPenName" type="text" placeholder="Pen name">
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Email</p>
+          <p class="info-value" id="infoEmail">—</p>
+          <input class="edit-input" id="editEmail" type="email" placeholder="Email address">
+          <p id="emailWarning" style="display:none; margin-top:6px; font-size:0.72rem; color:#f59e0b; letter-spacing:0.04em; line-height:1.5;">
+            ⚠ Changing your email will send a confirmation link to the new address. The change only takes effect after you click that link.
+          </p>
+        </div>
+      </div>
+
+      <!-- Gender -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Gender</p>
+          <p class="info-value" id="infoGender">—</p>
+          <select class="edit-input" id="editGender" style="cursor:pointer;">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-binary">Non-binary</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Date of Birth -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Date of Birth</p>
+          <p class="info-value" id="infoDob">—</p>
+          <input class="edit-input" id="editDob" type="date">
+        </div>
+      </div>
+
+      <!-- Biography -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Biography</p>
+          <p class="info-value" id="infoBio" style="font-family: var(--serif); font-style: italic; line-height: 1.6;">—</p>
+          <textarea class="edit-textarea" id="editBio" placeholder="Tell the world your story…"></textarea>
+        </div>
+      </div>
+
+      <!-- Frame -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="12" cy="12" r="4"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Avatar Frame</p>
+          <p class="info-value" id="infoFrame">None</p>
+          <select class="edit-input" id="editFrame" style="cursor:pointer;">
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Theme -->
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/>
+        </svg>
+        <div class="info-content" style="flex:1">
+          <p class="info-label">Profile Theme</p>
+          <p class="info-value" id="infoTheme">None</p>
+          <select class="edit-input" id="editTheme" style="cursor:pointer;">
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Member Since -->
+    <div style="text-align:center; padding: 12px 0;">
+      <span style="font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color: rgba(233,213,255,0.7);">
+        Member since <span id="memberSince">—</span>
+      </span>
+    </div>
+  </aside>
+
+  <!-- RIGHT — POEMS -->
+  <div class="right-panel">
+    <p class="section-eyebrow">My Verses</p>
+    <div class="poems-grid" id="poemsGrid">
+      <div class="poems-empty">Your verses will appear here once you start writing.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-icon">🌑</div>
+    <h2 class="modal-title">Leave the Circle?</h2>
+    <p class="modal-body">
+      This will permanently erase your profile, all your verses, and your place on Pen Africa.<br><br>
+      <strong>This cannot be undone.</strong>
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" style="display:inline-flex;" onclick="closeDeleteModal()">Keep Writing</button>
+      <button class="btn btn-danger btn" onclick="deleteAccount()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+        </svg>
+        Yes, Delete Profile
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPA_URL = "https://nefqvdfhkeovwuneeozg.supabase.co";
+  const SUPA_KEY = "sb_publishable_JLJ2a-Ks9LznxtOAYrtzEQ_Q6dzGsHh";
+  const client   = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  let currentUser   = null;
+  let currentProfile = null;
+
+    let notifications = [];
+
+    function escapeHtmlNotif(s) {
+      return (s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function timeAgoNotif(dateStr) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "Just now";
+      if (mins < 60) return mins + "m ago";
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return hours + "h ago";
+      const days = Math.floor(hours / 24);
+      if (days < 7) return days + "d ago";
+      return new Date(dateStr).toLocaleDateString();
+    }
+
+    async function initNotifications(userId) {
+      await loadNotifications(userId);
+      wireNotificationEvents(userId);
+    }
+
+    async function loadNotifications(userId) {
+      const { data, error } = await client
+        .from("notifications")
+        .select("id, type, title, body, link_url, read, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      if (error) {
+        console.warn("Notifications load error:", error.message);
+        document.getElementById("notifList").innerHTML =
+          `<div class="notif-empty">Couldn't load notifications.</div>`;
+        return;
+      }
+
+      notifications = data || [];
+      renderNotifBadge();
+      renderNotifList();
+    }
+
+    function renderNotifBadge() {
+      const unreadCount = notifications.filter(n => !n.read).length;
+      const badge = document.getElementById("notifBadge");
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+        badge.style.display = "flex";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
+    function renderNotifList() {
+      const el = document.getElementById("notifList");
+      if (!notifications.length) {
+        el.innerHTML = `<div class="notif-empty">You're all caught up.</div>`;
+        return;
+      }
+      el.innerHTML = notifications.map(n => `
+        <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n.id}" data-link="${escapeHtmlNotif(n.link_url || '')}">
+          <p class="notif-title">${escapeHtmlNotif(n.title)}</p>
+          ${n.body ? `<p class="notif-body">${escapeHtmlNotif(n.body)}</p>` : ''}
+          <p class="notif-time">${timeAgoNotif(n.created_at)}</p>
+        </div>
+      `).join("");
+
+      el.querySelectorAll(".notif-item").forEach(item => {
+        item.addEventListener("click", async () => {
+          const id = parseInt(item.dataset.id);
+          const link = item.dataset.link;
+          await markNotifRead(id);
+          if (link) window.location.href = link;
+        });
+      });
+    }
+
+    async function markNotifRead(id) {
+      const notif = notifications.find(n => n.id === id);
+      if (!notif || notif.read) return;
+      notif.read = true;
+      renderNotifBadge();
+      renderNotifList();
+      await client.from("notifications").update({ read: true }).eq("id", id);
+    }
+
+    async function markAllNotifsRead(userId) {
+      const unread = notifications.filter(n => !n.read);
+      if (!unread.length) return;
+      notifications.forEach(n => n.read = true);
+      renderNotifBadge();
+      renderNotifList();
+      await client.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
+    }
+
+    function wireNotificationEvents(userId) {
+      const bellBtn = document.getElementById("notifBellBtn");
+      const dropdown = document.getElementById("notifDropdown");
+      const wrap = document.getElementById("notifWrap");
+
+      bellBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("open");
+      });
+
+      document.getElementById("notifMarkAllBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        markAllNotifsRead(userId);
+      });
+
+      // Close dropdown when clicking anywhere outside it
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) dropdown.classList.remove("open");
+      });
+    }
+  let isEditing     = false;
+  let viewedUserId  = null;   // whose profile is actually being displayed
+  let isOwnProfile  = true;   // false when viewing someone else via ?id=
+
+  /* ══════ TOAST ══════ */
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  /* ══════ MODAL ══════ */
+  function openDeleteModal()  { document.getElementById('deleteModal').classList.add('open'); }
+  function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('open'); }
+
+  /* ══════ FORMAT DATE ══════ */
+  function fmtDate(str) {
+    if (!str) return '—';
+    const d = new Date(str);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  /* ══════ POPULATE DISPLAY ══════ */
+  function populateDisplay(p) {
+    const penName = p.pen_name || 'Nameless Voice';
+    document.getElementById('displayPenName').textContent = penName;
+    document.getElementById('displayFullName').textContent = p.name || '';
+    document.getElementById('displayBio').textContent = p.biography || '';
+    document.getElementById('headerPenName').textContent = penName;
+
+    document.getElementById('infoPenName').textContent = p.pen_name   || '—';
+    document.getElementById('infoName').textContent    = p.name       || '—';
+    document.getElementById('infoEmail').textContent   = p.email      || '—';
+    document.getElementById('infoGender').textContent  = p.gender     || '—';
+    document.getElementById('infoDob').textContent     = fmtDate(p.date_of_birth);
+    document.getElementById('infoBio').textContent     = p.biography  || '—';
+
+    const createdAt = p.created_at
+      ? new Date(p.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      : '—';
+    document.getElementById('memberSince').textContent = createdAt;
+
+    // avatar
+    const img = document.getElementById('avatarImg');
+    const init = document.getElementById('avatarInitial');
+    if (p.profile_picture) {
+      img.src = p.profile_picture;
+      img.style.display = 'block';
+      init.style.display = 'none';
+    } else {
+      img.style.display = 'none';
+      init.style.display = 'block';
+      init.textContent = (p.pen_name || p.name || 'P')[0].toUpperCase();
+    }
+  }
+
+  /* ══════ POPULATE EDIT FIELDS ══════ */
+  function populateEditFields(p) {
+    document.getElementById('editPenName').value = p.pen_name || '';
+    document.getElementById('editName').value    = p.name     || '';
+    document.getElementById('editEmail').value   = p.email    || '';
+    document.getElementById('editGender').value  = p.gender   || '';
+    document.getElementById('editDob').value     = p.date_of_birth || '';
+    document.getElementById('editBio').value     = p.biography || '';
+    document.getElementById('editFrame').value   = p.frame_item_id || '';
+    document.getElementById('editTheme').value   = p.theme_item_id || '';
+  }
+
+  /* ══════ MARKETPLACE COSMETICS — FRAME + THEME ══════ */
+  // Applies whatever frame/theme the VIEWED profile has set (works for
+  // any visitor, not just the owner — same as border/background/sticker
+  // rendering on poem.html). Also fills in the owned-items dropdowns,
+  // but only when viewing your own profile (editing UI is owner-only).
+  async function applyProfileCosmetics(p) {
+    const ids = [p.frame_item_id, p.theme_item_id].filter(Boolean);
+    let items = {};
+    if (ids.length > 0) {
+      const { data, error } = await client
+        .from('marketplace_items')
+        .select('id, category, preview_url')
+        .in('id', ids);
+      if (!error && data) data.forEach(item => { items[item.id] = item; });
+    }
+
+    // Frame — replace the avatar-ring's gradient background with the item's image
+    const ring = document.querySelector('.avatar-ring');
+    if (p.frame_item_id && items[p.frame_item_id]) {
+      ring.style.backgroundImage = `url(${items[p.frame_item_id].preview_url})`;
+      ring.style.backgroundSize  = 'cover';
+      document.getElementById('infoFrame').textContent = 'Applied';
+    } else {
+      document.getElementById('infoFrame').textContent = 'None';
+    }
+
+    // Theme — replace the profile banner's gradient background with the item's image
+    const banner = document.querySelector('.profile-banner');
+    if (p.theme_item_id && items[p.theme_item_id]) {
+      banner.style.backgroundImage = `url(${items[p.theme_item_id].preview_url})`;
+      banner.style.backgroundSize  = 'cover';
+      banner.style.backgroundPosition = 'center';
+      document.getElementById('infoTheme').textContent = 'Applied';
+    } else {
+      document.getElementById('infoTheme').textContent = 'None';
+    }
+
+    if (isOwnProfile) {
+      await populateOwnedFrameThemeDropdowns();
+      // Re-select the currently-applied item now that options exist
+      document.getElementById('editFrame').value = p.frame_item_id || '';
+      document.getElementById('editTheme').value = p.theme_item_id || '';
+    }
+  }
+
+  async function populateOwnedFrameThemeDropdowns() {
+    const categories = [
+      { cat: 'frame', selectId: 'editFrame' },
+      { cat: 'theme', selectId: 'editTheme' }
+    ];
+    for (const c of categories) {
+      const { data, error } = await client.rpc('get_my_owned_items', { p_category: c.cat });
+      const sel = document.getElementById(c.selectId);
+      if (error || !data || !sel) continue;
+      // Reset to just the "None" option before repopulating, so calling
+      // this more than once (e.g. after every save) never duplicates entries
+      sel.innerHTML = '<option value="">None</option>';
+      data.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.name;
+        sel.appendChild(opt);
+      });
+    }
+  }
+
+  /* ══════ TROPHY CASE ══════ */
+  // Public — shows whoever's profile is being viewed, not just your own.
+  async function loadTrophyCase(userId) {
+    const { data, error } = await client
+      .from('user_trophies')
+      .select('trophy_type_id, reason, awarded_at, trophy_types(display_name, icon, sort_order)')
+      .eq('user_id', userId);
+
+    const caseEl = document.getElementById('trophyCase');
+    const grid = document.getElementById('trophyGrid');
+    if (error || !data || data.length === 0) {
+      caseEl.style.display = 'none';
+      return;
+    }
+
+    // Group by trophy type, count each, keep sort_order for display order
+    const grouped = {};
+    data.forEach(t => {
+      const key = t.trophy_type_id;
+      if (!grouped[key]) {
+        grouped[key] = {
+          icon: t.trophy_types?.icon || '🏆',
+          name: t.trophy_types?.display_name || key,
+          sort: t.trophy_types?.sort_order ?? 99,
+          count: 0
+        };
+      }
+      grouped[key].count++;
+    });
+
+    const sorted = Object.values(grouped).sort((a, b) => a.sort - b.sort);
+    grid.innerHTML = sorted.map(t => `
+      <div class="trophy-item" title="${escapeHtmlNotif(t.name)}">
+        <span class="trophy-icon">${t.icon}</span>
+        <span class="trophy-count">×${t.count}</span>
+      </div>
+    `).join('');
+
+    caseEl.style.display = 'block';
+  }
+
+  /* ══════ EDIT MODE TOGGLE ══════ */
+  function startEdit() {
+    isEditing = true;
+    populateEditFields(currentProfile);
+    document.querySelectorAll('.info-value, .edit-input, .edit-textarea').forEach(el => {
+      el.style.display = el.classList.contains('info-value') ? 'none' : 'block';
+    });
+    document.getElementById('editBtn').style.display    = 'none';
+    document.getElementById('saveBtn').style.display    = 'inline-flex';
+    document.getElementById('cancelBtn').style.display  = 'inline-flex';
+    document.getElementById('emailWarning').style.display = 'block';
+  }
+
+  function cancelEdit() {
+    isEditing = false;
+    document.querySelectorAll('.info-value').forEach(el => el.style.display = 'block');
+    document.querySelectorAll('.edit-input, .edit-textarea').forEach(el => el.style.display = 'none');
+    document.getElementById('editBtn').style.display    = 'inline-flex';
+    document.getElementById('saveBtn').style.display    = 'none';
+    document.getElementById('cancelBtn').style.display  = 'none';
+    document.getElementById('emailWarning').style.display = 'none';
+  }
+
+  /* ══════ SAVE PROFILE ══════ */
+  async function saveProfile() {
+    const updates = {
+      pen_name:      document.getElementById('editPenName').value.trim(),
+      name:          document.getElementById('editName').value.trim(),
+      email:         document.getElementById('editEmail').value.trim(),
+      gender:        document.getElementById('editGender').value,
+      date_of_birth: document.getElementById('editDob').value || null,
+      biography:     document.getElementById('editBio').value.trim(),
+      frame_item_id: document.getElementById('editFrame').value || null,
+      theme_item_id: document.getElementById('editTheme').value || null,
+    };
+
+    if (!updates.pen_name) { showToast('Pen name cannot be empty.', 'error'); return; }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.textContent = 'Saving…';
+    saveBtn.disabled = true;
+
+    // .select() forces Supabase to return the updated row —
+    // if data comes back empty the update was silently blocked by RLS
+    const { data, error } = await client
+      .from('profiles')
+      .update(updates)
+      .eq('id', currentUser.id)
+      .select()
+      .single();
+
+    saveBtn.textContent = 'Save Profile';
+    saveBtn.disabled = false;
+
+    if (error) {
+      console.error('Save error:', error);
+      showToast('Could not save: ' + error.message, 'error');
+      return;
+    }
+
+    if (!data) {
+      console.error('Save returned no data — RLS may be blocking the update.');
+      showToast('Save blocked — please sign out and back in, then try again.', 'error');
+      return;
+    }
+
+    console.log('Saved successfully:', data);
+
+    // if email changed, update auth too
+    if (updates.email && updates.email !== currentProfile.email) {
+      const { error: authErr } = await client.auth.updateUser({ email: updates.email });
+      if (authErr) {
+        showToast('Email update failed: ' + authErr.message, 'error');
+      } else {
+        showToast('Confirmation email sent to ' + updates.email + ' — click the link to confirm the change.', 'success');
+      }
+    }
+
+    // Use what DB actually saved (data) as source of truth
+    currentProfile = { ...currentProfile, ...data };
+    populateDisplay(currentProfile);
+    applyProfileCosmetics(currentProfile).catch(e => console.warn('cosmetics failed', e));
+    cancelEdit();
+    showToast('Profile saved ✦');
+  }
+
+  /* ══════ AVATAR UPLOAD ══════ */
+  document.getElementById('avatarInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image must be under 2 MB.', 'error');
+      return;
+    }
+
+    showToast('Uploading picture…');
+
+    const ext      = file.name.split('.').pop().toLowerCase();
+    const filePath = currentUser.id + '/avatar.' + ext;
+    // Try common bucket names in order — first success wins
+    const BUCKETS  = ['avatars', 'profiles', 'images', 'public'];
+    let publicUrl  = null;
+
+    for (const bucket of BUCKETS) {
+      const { error: upErr } = await client.storage
+        .from(bucket)
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (!upErr) {
+        const { data: urlData } = client.storage.from(bucket).getPublicUrl(filePath);
+        publicUrl = urlData.publicUrl + '?t=' + Date.now();
+        console.log('Uploaded to bucket:', bucket);
+        break;
+      } else {
+        console.warn('Bucket "' + bucket + '" failed:', upErr.message);
+      }
+    }
+
+    // FALLBACK: no storage bucket exists — store image as base64 in DB directly
+    if (!publicUrl) {
+      console.warn('No storage bucket found — using base64 fallback.');
+      showToast('Saving image directly to profile…');
+      publicUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('FileReader failed'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Save URL (or base64) to profiles table
+    const { error: dbErr } = await client
+      .from('profiles')
+      .update({ profile_picture: publicUrl })
+      .eq('id', currentUser.id);
+
+    if (dbErr) {
+      showToast('Could not save picture: ' + dbErr.message, 'error');
+      return;
+    }
+
+    currentProfile.profile_picture = publicUrl;
+    const img = document.getElementById('avatarImg');
+    img.src = publicUrl;
+    img.style.display = 'block';
+    document.getElementById('avatarInitial').style.display = 'none';
+    showToast('Profile picture updated ✦');
+  });
+
+  /* ══════ LOAD POEMS ══════
+     Tries both 'user_id' and 'author_id' — whichever your poems table uses.
+  ══════ */
+  async function loadPoems(userId) {
+    let poems = [];
+    try {
+      // Try user_id first (common); fall back to author_id
+      let { data, error } = await client
+        .from('poems')
+        .select('id, title, content, created_at, image_url')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      // If that column doesn't exist, try author_id
+      if (error && error.code === '42703') {
+        const res = await client
+          .from('poems')
+          .select('id, title, content, created_at, image_url')
+          .eq('author_id', userId)
+          .order('created_at', { ascending: false });
+        data  = res.data;
+        error = res.error;
+      }
+
+      if (!error && data) poems = data;
+    } catch(e) { console.warn('poems query error', e); }
+
+    const grid = document.getElementById('poemsGrid');
+    document.getElementById('statPoems').textContent = poems.length;
+
+    if (poems.length === 0) {
+      grid.innerHTML = `<div class="poems-empty">${isOwnProfile ? 'Your verses will appear here once you start writing.' : (currentProfile?.pen_name || 'This poet') + " hasn't published any poems yet."}</div>`;
+      return;
+    }
+
+    grid.innerHTML = poems.map(p => {
+      const excerpt = (p.content || '').slice(0, 100).trimEnd();
+      const initial = (p.title || 'P')[0].toUpperCase();
+      const thumb = p.image_url
+        ? `<img src="${p.image_url}" alt=""/>`
+        : initial;
+      return `
+        <div class="poem-card" onclick="window.location.href='poem.html?id=${p.id}'">
+          <div class="poem-card-thumb">${thumb}</div>
+          <div class="poem-card-body">
+            <p class="poem-card-title">${p.title || 'Untitled'}</p>
+            <p class="poem-card-excerpt">${excerpt}${(p.content || '').length > 100 ? '…' : ''}</p>
+            <p class="poem-card-date">${fmtDate(p.created_at)}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* ══════ LOAD STATS ══════
+     Every query is fully isolated. If a table doesn't exist yet,
+     it logs a warning and shows 0 — never blocks the page.
+  ══════ */
+  /* ══════ LOAD STATS ══════
+     likes, followers, following are integer columns directly on profiles.
+     Profile is already fetched — just read the values, no extra queries.
+  ══════ */
+  function loadStats(profile) {
+    document.getElementById('statLikes').textContent     = profile.likes      ?? 0;
+    document.getElementById('statFollowers').textContent = profile.followers  ?? 0;
+    document.getElementById('statFollowing').textContent = profile.following  ?? 0;
+  }
+
+  /* ══════ DELETE ACCOUNT ══════ */
+  async function deleteAccount() {
+    closeDeleteModal();
+    showToast('Deleting profile…');
+    try {
+      await client.from('poems').delete().eq('user_id', currentUser.id);
+    } catch(e) {}
+    try {
+      await client.from('profiles').delete().eq('id', currentUser.id);
+    } catch(e) {}
+    await client.auth.signOut();
+    showToast('Your circle has been closed. Goodbye.');
+    setTimeout(() => window.location.href = 'index.html', 2000);
+  }
+
+  /* ══════ BANNER VERSE ROTATION ══════ */
+  const verses = [
+    '"Words are the ink of the soul"',
+    '"Every poem is a heartbeat of Africa"',
+    '"Write until the silence speaks"',
+    '"Verse by verse, continent by continent"',
+    '"The pen outlasts empires"',
+  ];
+  document.getElementById('bannerVerse').textContent =
+    verses[Math.floor(Date.now() / 86400000) % verses.length];
+
+  /* ══════ MAIN LOADER ══════ */
+  (async () => {
+    const loader = document.getElementById('pageLoader');
+
+    // Hard safety valve — if anything hangs (network stall, dropped
+    // request, unexpected error) this fires after 10s no matter what,
+    // so the page can never spin forever with no feedback.
+    let timedOut = false;
+    const watchdog = setTimeout(() => {
+      timedOut = true;
+      loader.style.display = 'none';
+      showToast('This is taking longer than expected. Check your connection and try refreshing.', 'error');
+    }, 10000);
+
+    try {
+      // 1. Session check
+      let session = null;
+      try {
+        const { data } = await client.auth.getSession();
+        session = data?.session;
+      } catch(e) { console.warn('Session error:', e); }
+
+      if (!session?.user) {
+        window.location.href = 'login.html';
+        return;
+      }
+      currentUser = session.user;
+      initNotifications(currentUser.id);
+
+      // 2. Determine which profile we're actually viewing —
+      //    ?id=<uuid> in the URL means someone else's profile;
+      //    no param (or id matching our own) means our own profile.
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedId = urlParams.get('id');
+      viewedUserId = requestedId || currentUser.id;
+      isOwnProfile = (viewedUserId === currentUser.id);
+
+      // 3. Profile fetch — of the VIEWED user, not always ourselves
+      let profile = null;
+      try {
+        const { data, error } = await client
+          .from('profiles')
+          .select('*')
+          .eq('id', viewedUserId)
+          .single();
+        if (error) throw error;
+        profile = data;
+      } catch(e) {
+        console.warn('Profile fetch error:', e.message);
+        if (!timedOut) showToast('Could not load this profile.', 'error');
+        return; // finally will hide loader
+      }
+
+      currentProfile = profile;
+      populateDisplay(profile);
+      applyProfileCosmetics(profile).catch(e => console.warn('cosmetics failed', e));
+      loadTrophyCase(viewedUserId).catch(e => console.warn('trophy case failed', e));
+
+      // 4. Show the right action buttons for who's viewing
+      if (isOwnProfile) {
+        document.getElementById('editBtn').style.display    = 'inline-flex';
+        document.getElementById('deleteBtn').style.display  = 'inline-flex';
+        document.getElementById('followBtn').style.display  = 'none';
+        document.getElementById('messageBtn').style.display = 'none';
+        document.getElementById('blockBtn').style.display   = 'none';
+      } else {
+        document.getElementById('editBtn').style.display    = 'none';
+        document.getElementById('deleteBtn').style.display  = 'none';
+        document.getElementById('followBtn').style.display  = 'inline-flex';
+        document.getElementById('messageBtn').style.display = 'inline-flex';
+        document.getElementById('blockBtn').style.display   = 'inline-flex';
+        // Follow-state and block-state checks run but are NOT allowed to
+        // block the rest of the page — if either hangs or fails, the page
+        // still finishes loading.
+        checkFollowState().catch(e => console.warn('follow state check failed', e));
+        checkBlockState().catch(e => console.warn('block state check failed', e));
+      }
+
+      // 5. Poems + stats for the VIEWED user
+      await Promise.allSettled([
+        loadPoems(viewedUserId),
+      ]);
+      loadStats(profile);
+
+    } catch (e) {
+      console.warn('Profile page load error:', e);
+      if (!timedOut) showToast('Something went wrong loading this page. Try refreshing.', 'error');
+    } finally {
+      clearTimeout(watchdog);
+      if (!timedOut) loader.style.display = 'none';
+    }
+  })();
+
+  /* ══════ FOLLOW (on the profile page itself) ══════ */
+  async function checkFollowState() {
+    try {
+      const { data } = await client
+        .from('follows')
+        .select('follower_id')
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', viewedUserId)
+        .maybeSingle();
+      setFollowButtonState(!!data);
+    } catch(e) { console.warn('follow state check failed', e); }
+  }
+
+  function setFollowButtonState(following) {
+    const btn = document.getElementById('followBtn');
+    if (following) {
+      btn.textContent = 'Following';
+      btn.classList.add('following');
+    } else {
+      btn.textContent = 'Follow';
+      btn.classList.remove('following');
+    }
+  }
+
+  async function toggleFollowAction() {
+    const btn = document.getElementById('followBtn');
+    btn.disabled = true;
+    try {
+      const { data, error } = await client.rpc('toggle_follow', { p_target_user_id: viewedUserId });
+      if (error) { showToast(error.message, 'error'); return; }
+      setFollowButtonState(data.now_following);
+      document.getElementById('statFollowers').textContent = data.target_follower_count;
+      showToast(data.now_following ? 'Following ✦' : 'Unfollowed');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  /* ══════ MESSAGE (jump straight to a fresh/existing thread) ══════ */
+  function goToMessageThisUser() {
+    window.location.href = 'messages.html?startWith=' + viewedUserId
+      + '&penName=' + encodeURIComponent(currentProfile.pen_name || 'Unknown');
+  }
+
+  /* ══════ BLOCK (messaging only — comments/follows unaffected) ══════ */
+  async function checkBlockState() {
+    try {
+      const { data } = await client
+        .from('message_blocks')
+        .select('id')
+        .eq('blocker_id', currentUser.id)
+        .eq('blocked_id', viewedUserId)
+        .maybeSingle();
+      setBlockButtonState(!!data);
+    } catch(e) { console.warn('block state check failed', e); }
+  }
+
+  function setBlockButtonState(blocked) {
+    const btn = document.getElementById('blockBtn');
+    if (blocked) {
+      btn.textContent = 'Blocked';
+      btn.classList.add('blocked');
+    } else {
+      btn.textContent = 'Block';
+      btn.classList.remove('blocked');
+    }
+  }
+
+  async function toggleBlockThisUser() {
+    const btn = document.getElementById('blockBtn');
+    const isCurrentlyBlocked = btn.classList.contains('blocked');
+
+    if (!isCurrentlyBlocked) {
+      if (!confirm(`Block ${currentProfile.pen_name || 'this user'}? They won't be able to message you, and you won't be able to message them. This does not affect comments or follows.`)) return;
+    }
+
+    btn.disabled = true;
+    try {
+      const { data, error } = await client.rpc('toggle_message_block', { p_target_user_id: viewedUserId });
+      if (error) { showToast(error.message, 'error'); return; }
+      setBlockButtonState(data.now_blocked);
+      showToast(data.now_blocked ? 'User blocked from messaging you' : 'User unblocked');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

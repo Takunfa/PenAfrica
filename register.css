@@ -1,0 +1,73 @@
+body {
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle, #870070, #21001c, #000);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+/* 🪶 CARD CONTAINER */
+.form-container {
+  width: 360px;
+  padding: 30px;
+  background: rgba(20, 0, 35, 0.6);
+  border: 1px solid rgba(238, 60, 152, 0.30196078431372547);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 40px rgba(124, 58, 237, 0.15);
+  text-align: center;
+}
+
+/* 🖤 TITLE */
+h2 {
+  margin-bottom: 20px;
+  color: #fc84ee;
+  letter-spacing: 3px;
+}
+
+/* 🧾 INPUT GRID FIX */
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 10px;
+  outline: none;
+  background: #1a1a1a;
+  color: white;
+  display: block;
+}
+
+/* 🔘 BUTTON */
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background: #ed3ad2;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #f65ced;
+  transform: scale(1.04);
+}
+
+/* 🔗 LINKS */
+p {
+  margin-top: 15px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+a {
+  color: #fc84ef;
+  text-decoration: none;
+}

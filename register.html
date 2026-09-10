@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="register.css">
+  <title>Pen Africa — Register</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  html, body {
+    background: linear-gradient(180deg, #ffffff 0%, #f0ebff 12%, #ddd6fe 28%, #5cf6f5 50%, #004e58 70%, #001920 85%, #07030f 100%) fixed !important;
+    background-attachment: fixed !important;
+    min-height: 100vh;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="form-container">
+
+  <h2>Forge Identity</h2>
+
+  <input id="full_name" placeholder="Full Name">
+  <input id="pen_name" placeholder="Pen Name">
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <input id="gender" placeholder="Gender">
+  <input id="bio" placeholder="Biography">
+  <input id="dob" type="date">
+
+  <button onclick="register()">Enter the Circle</button>
+
+  <p>
+    Already inside? <a href="login.html">Sign in</a>
+  </p>
+
+</div>
+
+<script>
+
+const supabaseUrl = "https://nefqvdfhkeovwuneeozg.supabase.co";
+const supabaseKey = "sb_publishable_JLJ2a-Ks9LznxtOAYrtzEQ_Q6dzGsHh";
+
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function register() {
+
+  const full_name = document.getElementById("full_name").value;
+  const pen_name = document.getElementById("pen_name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const gender = document.getElementById("gender").value;
+  const bio = document.getElementById("bio").value;
+  const dob = document.getElementById("dob").value;
+
+  // 1. AUTH SIGNUP — pass profile data in metadata so we can
+  //    insert the profile row AFTER the session is confirmed
+  let { data, error } = await client.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name:          full_name,
+        pen_name:      pen_name,
+        gender:        gender,
+        biography:     bio,
+        date_of_birth: dob
+      }
+    }
+  });
+
+  // 2. HANDLE EXISTING USER
+  if (error) {
+    const msg = error.message.toLowerCase();
+
+    if (msg.includes("already")) {
+      const { data: loginData, error: loginError } =
+        await client.auth.signInWithPassword({ email, password });
+
+      if (loginError) { alert(loginError.message); return; }
+
+      // Existing user — make sure profile row exists
+      const existingUser = loginData?.user;
+      if (existingUser) {
+        await client.from("profiles").upsert({
+          id:            existingUser.id,
+          name:          full_name,
+          pen_name:      pen_name,
+          email:         email,
+          gender:        gender,
+          biography:     bio,
+          date_of_birth: dob || null
+        }, { onConflict: "id" });
+      }
+
+      window.location.href = "permissions.html";
+      return;
+    }
+
+    alert(error.message);
+    return;
+  }
+
+  const user = data?.user;
+
+  if (!user) {
+    alert("Signup failed: no user returned.");
+    return;
+  }
+
+  // 3. SIGN IN IMMEDIATELY so we have an active session before the profile insert
+  //    (Without this, the session is unconfirmed and RLS blocks the insert silently)
+  const { data: signInData, error: signInError } =
+    await client.auth.signInWithPassword({ email, password });
+
+  if (signInError) {
+    // Session not active yet — store data in localStorage as fallback
+    // A Supabase trigger (see note below) will handle the insert on confirm
+    localStorage.setItem("pendingProfile", JSON.stringify({
+      id:            user.id,
+      name:          full_name,
+      pen_name:      pen_name,
+      email:         email,
+      gender:        gender,
+      biography:     bio,
+      date_of_birth: dob || null
+    }));
+    alert("Account created! Please check your email to confirm, then log in.");
+    window.location.href = "login.html";
+    return;
+  }
+
+  // 4. SAVE PROFILE — session is now active so RLS will pass
+  const { error: profileError } = await client
+    .from("profiles")
+    .upsert({
+      id:            user.id,
+      name:          full_name,
+      pen_name:      pen_name,
+      email:         email,
+      gender:        gender,
+      biography:     bio,
+      date_of_birth: dob || null
+    }, { onConflict: "id" });
+
+  if (profileError) {
+    alert("Profile save failed: " + profileError.message);
+    return;
+  }
+
+  // 5. REDIRECT
+  window.location.href = "permissions.html";
+}
+
+</script>
+
+</body>
+</html>

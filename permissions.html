@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pen Africa — Permissions</title>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(180deg, #ffffff 0%, #f0ebff 12%, #ddd6fe 28%, #8b5cf6 50%, #4c1d95 70%, #1a0840 85%, #07030f 100%) fixed;
+      color: #1a0840;
+      font-family: Arial;
+    }
+
+    .container {
+      width: 420px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .box {
+      margin: 10px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: #4c1d95;
+    }
+
+    input[type="checkbox"] {
+      margin-top: 3px;
+      transform: scale(1.2);
+      accent-color: #7C3AED;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      background: #7C3AED;
+      color: #1a0840;
+
+      opacity: 0;
+      transform: translateY(10px);
+      transition: 0.4s ease;
+      pointer-events: none;
+    }
+
+    button.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #9B5CFF;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Permissions & Consent</h1>
+
+  <div class="box">
+    <input type="checkbox" class="check">
+    <label>I agree that my profile and pen name may be publicly visible within Pen Africa.</label>
+  </div>
+
+  <div class="box">
+    <input type="checkbox" class="check">
+    <label>I consent to my submitted poetry being published, shared, and featured in community spaces.</label>
+  </div>
+
+  <div class="box">
+    <input type="checkbox" class="check">
+    <label>I understand that my work may be used for competitions, rankings, and community events.</label>
+  </div>
+
+  <div class="box">
+    <input type="checkbox" class="check">
+    <label>I agree to maintain respectful communication and avoid harmful, racist, or abusive content.</label>
+  </div>
+
+  <button id="continueBtn" onclick="goNext()">Continue into the Circle</button>
+
+</div>
+
+<script>
+
+const checks = document.querySelectorAll(".check");
+const btn = document.getElementById("continueBtn");
+
+checks.forEach(c => {
+  c.addEventListener("change", evaluate);
+});
+
+function evaluate() {
+  let allChecked = true;
+
+  checks.forEach(c => {
+    if (!c.checked) allChecked = false;
+  });
+
+  if (allChecked) {
+    btn.classList.add("show");
+  } else {
+    btn.classList.remove("show");
+  }
+}
+
+function goNext() {
+  window.location.href = "welcome.html";
+}
+
+</script>
+
+</body>
+</html>

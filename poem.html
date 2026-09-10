@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pen Africa — Poem</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Lora:ital,wght@0,400;1,400&family=EB+Garamond:ital@0;1&family=Crimson+Text:ital@0;1&family=Libre+Baskerville:ital@0;1&display=swap"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#07050b;--bg2:#0f0a1a;--bg3:#160d26;
+      --purple:#7C3AED;--violet:#A78BFA;
+      --rule:rgba(167,139,250,0.15);
+      --text:#EDE8F5;--muted:#9585B8;--gold:#f59e0b;
+      --serif:'Cormorant Garamond',serif;--sans:'Inter',system-ui,sans-serif;
+    }
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+    a{text-decoration:none;color:inherit;}
+    img{display:block;}
+
+    /* HEADER */
+    .header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 52px;height:68px;border-bottom:1px solid var(--rule);background:rgba(7,5,11,0.95);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100;}
+    .back-link{display:flex;align-items:center;gap:8px;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);transition:color .2s;justify-self:start;}
+    .back-link:hover{color:var(--violet);}
+    .back-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+    .header-brand{font-size:0.72rem;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;text-align:center;background:linear-gradient(90deg,#fff,#a78bfa,#7C3AED,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .header-icons{justify-self:end;display:flex;gap:22px;font-size:1.1rem;align-items:center;}
+    .header-icons a{opacity:0.55;transition:opacity .2s,transform .2s;}
+    .header-icons a:hover{opacity:1;transform:scale(1.15);}
+
+    .notif-wrap{position:relative;}
+    .notif-bell-btn{background:none;border:none;font-size:1.1rem;cursor:pointer;opacity:0.55;transition:opacity .2s,transform .2s;position:relative;padding:0;line-height:1;color:inherit;font-family:inherit;}
+    .notif-bell-btn:hover{opacity:1;transform:scale(1.15);}
+    .notif-badge{position:absolute;top:-6px;right:-8px;background:#dc2626;color:#fff;font-size:0.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-family:'Inter',sans-serif;}
+    .notif-dropdown{display:none;position:absolute;top:calc(100% + 14px);right:0;width:340px;max-width:90vw;max-height:480px;background:var(--bg2);border:1px solid var(--rule);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,0.5);overflow:hidden;flex-direction:column;z-index:200;}
+    .notif-dropdown.open{display:flex;}
+    .notif-dropdown-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--rule);font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;color:var(--text);}
+    .notif-mark-all{background:none;border:none;color:var(--violet);font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+    .notif-mark-all:hover{text-decoration:underline;}
+    .notif-list{overflow-y:auto;flex:1;}
+    .notif-item{display:block;padding:12px 16px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .15s;text-align:left;}
+    .notif-item:hover{background:var(--bg3);}
+    .notif-item.unread{background:rgba(167,139,250,0.06);}
+    .notif-item.unread::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--violet);margin-right:6px;vertical-align:middle;}
+    .notif-title{font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:3px;}
+    .notif-body{font-family:'Inter',sans-serif;font-size:0.76rem;color:var(--muted);line-height:1.4;}
+    .notif-time{font-family:'Inter',sans-serif;font-size:0.65rem;color:var(--violet);margin-top:5px;}
+    .notif-empty,.notif-loading{padding:40px 20px;text-align:center;color:var(--muted);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.95rem;}
+    @media(max-width:640px){.notif-dropdown{position:fixed;top:68px;right:10px;left:10px;width:auto;max-width:none;}}
+
+    /* POEM WRAP */
+    .poem-wrap{max-width:720px;margin:0 auto;padding:48px 32px 100px;}
+
+    /* POEM CARD */
+    .poem-card{background:var(--bg2);border:1px solid var(--rule);border-radius:16px;overflow:hidden;position:relative;}
+
+    /* Top right — avatar + follow/edit */
+    .poem-top-right{position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:8px;z-index:2;}
+    .author-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;border:2px solid rgba(124,58,237,0.4);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:var(--violet);flex-shrink:0;cursor:pointer;transition:border-color .2s;}
+    .author-avatar:hover{border-color:var(--purple);}
+    .author-avatar img{width:100%;height:100%;object-fit:cover;}
+    .follow-btn,.edit-btn{padding:6px 14px;border-radius:20px;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all .22s;border:1px solid;}
+    .follow-btn{border-color:rgba(124,58,237,0.4);background:transparent;color:var(--violet);}
+    .follow-btn:hover,.follow-btn.following{background:rgba(124,58,237,0.15);border-color:var(--purple);color:#fff;}
+    .edit-btn{border-color:rgba(245,158,11,0.35);background:transparent;color:var(--gold);display:none;}
+    .fc-btn{padding:6px 14px;border-radius:20px;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all .22s;border:1px solid rgba(245,158,11,0.5);background:rgba(245,158,11,0.1);color:var(--gold);}
+    .fc-btn:hover{background:rgba(245,158,11,0.2);}
+    .fc-box{position:absolute;top:56px;right:16px;z-index:3;width:280px;background:var(--bg2);border:1px solid rgba(245,158,11,0.4);border-radius:10px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,0.4);}
+    .fc-box-label{font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
+    .fc-box textarea{width:100%;padding:8px 10px;border-radius:6px;background:var(--bg3);border:1px solid var(--rule);color:var(--text);font-family:var(--sans);font-size:0.8rem;resize:vertical;}
+    .fc-box textarea:focus{outline:none;border-color:var(--gold);}
+    .fc-box-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;}
+    .fc-box-actions button{font-size:0.7rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:none;color:var(--muted);cursor:pointer;}
+    .fc-box-actions .fc-submit{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:700;}
+    .edit-btn:hover{background:rgba(245,158,11,0.1);}
+
+    /* Poem image */
+    .poem-image{width:140px;height:auto;max-height:200px;object-fit:contain;background:var(--bg3);border-radius:12px;display:block;margin:20px 38px 0;cursor:zoom-in;transition:filter .2s;border:1px solid var(--rule);}
+    .poem-image:hover{filter:brightness(1.05);}
+    .poem-initial{width:100%;height:120px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:5rem;font-weight:700;color:rgba(167,139,250,0.07);border-bottom:1px solid var(--rule);}
+
+    /* Lightbox */
+    .lightbox-overlay{display:none;position:fixed;inset:0;background:rgba(5,3,9,0.92);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;padding:32px;cursor:zoom-out;animation:lbFade .2s ease;}
+    .lightbox-overlay.active{display:flex;}
+    @keyframes lbFade{from{opacity:0;}to{opacity:1;}}
+    .lightbox-overlay img{width:min(92vw,720px);height:auto;max-height:88vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid var(--rule);animation:lbZoom .25s ease;cursor:default;}
+    @keyframes lbZoom{from{transform:scale(0.92);opacity:0;}to{transform:scale(1);opacity:1;}}
+    .lightbox-close{position:absolute;top:24px;right:32px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--rule);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;transition:background .2s;}
+    .lightbox-close:hover{background:rgba(255,255,255,0.12);}
+
+    /* Poem body — VIEW MODE */
+    .poem-body{padding:32px 38px 24px;}
+    .poem-genre{font-size:0.65rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:3px 12px;display:inline-block;margin-bottom:16px;}
+    .poem-title-display{font-family:var(--serif);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:600;color:#fff;line-height:1.1;margin-bottom:6px;}
+    .poem-author-line{font-family:var(--serif);font-style:italic;font-size:0.92rem;color:var(--violet);margin-bottom:24px;}
+    .poem-content{font-family:var(--serif);font-style:italic;font-size:1.08rem;line-height:2;color:var(--text);white-space:pre-wrap;}
+
+    /* ══ EDIT PANEL — hidden until owner clicks Edit ══ */
+    .edit-panel{display:none;padding:28px 38px 24px;border-top:1px solid var(--rule);}
+    .edit-panel.open{display:block;}
+    .edit-field-label{font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--violet);margin-bottom:6px;margin-top:16px;}
+    .edit-field-label:first-child{margin-top:0;}
+    .edit-title-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--rule);border-radius:6px;padding:10px 14px;color:var(--text);font-family:var(--serif);font-size:1.3rem;outline:none;transition:border-color .2s;}
+    .edit-title-input:focus{border-color:var(--violet);}
+    .edit-content-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--rule);border-radius:6px;padding:12px 14px;color:var(--text);font-family:var(--serif);font-size:1rem;font-style:italic;outline:none;resize:vertical;min-height:220px;line-height:2;transition:border-color .2s;}
+    .edit-content-input:focus{border-color:var(--violet);}
+    .edit-genre-select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--rule);border-radius:6px;padding:10px 14px;color:var(--text);font-family:var(--sans);font-size:0.88rem;outline:none;cursor:pointer;}
+    .edit-genre-select option{background:#1a0f29;}
+    .edit-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+    .btn-save-edit{padding:10px 24px;background:var(--purple);color:#fff;border:none;border-radius:4px;font-size:0.78rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all .22s;}
+    .btn-save-edit:hover{background:#6d28d9;box-shadow:0 4px 16px rgba(124,58,237,0.4);}
+    .btn-save-edit:disabled{opacity:0.5;cursor:not-allowed;}
+    .btn-cancel-edit{padding:10px 20px;background:transparent;color:var(--muted);border:1px solid var(--rule);border-radius:4px;font-size:0.78rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all .22s;}
+    .btn-cancel-edit:hover{border-color:var(--muted);color:var(--text);}
+    .btn-delete-poem{padding:10px 20px;background:transparent;color:rgba(248,113,113,0.7);border:1px solid rgba(248,113,113,0.25);border-radius:4px;font-size:0.78rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all .22s;margin-left:auto;}
+    .btn-delete-poem:hover{color:#f87171;border-color:#f87171;}
+
+    /* Poem actions bar */
+    .poem-actions{padding:16px 38px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+    .like-btn{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--rule);border-radius:20px;padding:7px 16px;font-size:0.8rem;color:var(--muted);cursor:pointer;transition:all .22s;}
+    .like-btn:hover,.like-btn.liked{border-color:rgba(239,68,68,0.4);color:#f87171;background:rgba(239,68,68,0.06);}
+    .like-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+    .like-btn.liked svg{fill:#f87171;stroke:#f87171;}
+    .like-count{font-weight:600;}
+    .share-btn{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--rule);border-radius:20px;padding:7px 16px;font-size:0.8rem;color:var(--muted);cursor:pointer;transition:all .22s;margin-left:auto;}
+    .share-btn:hover{border-color:var(--violet);color:var(--violet);}
+    .share-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;}
+
+    /* COMMENTS */
+    .comments-section{padding:28px 32px 0;}
+    .comments-label{font-size:0.62rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--violet);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+    .comments-label::after{content:'';flex:1;height:1px;background:var(--rule);}
+    .new-comment{display:flex;gap:12px;margin-bottom:24px;}
+    .nc-avatar{width:34px;height:34px;border-radius:50%;border:1px solid var(--rule);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:0.9rem;color:var(--violet);flex-shrink:0;overflow:hidden;}
+    .nc-avatar img{width:100%;height:100%;object-fit:cover;}
+    .nc-right{flex:1;}
+    .nc-input{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--rule);border-radius:6px;padding:9px 13px;color:var(--text);font-family:var(--serif);font-size:0.92rem;font-style:italic;outline:none;resize:none;min-height:68px;transition:border-color .2s;}
+    .nc-input:focus{border-color:var(--violet);}
+    .nc-submit{margin-top:7px;padding:7px 18px;background:var(--purple);color:#fff;border:none;border-radius:4px;font-size:0.73rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all .22s;}
+    .nc-submit:hover{background:#6d28d9;}
+    .comments-list{display:flex;flex-direction:column;gap:18px;padding-bottom:36px;}
+    .comment-item{display:flex;gap:11px;}
+    .ci-avatar{width:32px;height:32px;border-radius:50%;border:1px solid var(--rule);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:0.85rem;color:var(--violet);flex-shrink:0;overflow:hidden;}
+    .ci-avatar img{width:100%;height:100%;object-fit:cover;}
+    .ci-body{flex:1;}
+    .ci-pen{font-family:var(--serif);font-size:0.85rem;font-weight:600;color:var(--violet);margin-bottom:3px;}
+    .ci-text{font-family:var(--serif);font-style:italic;font-size:0.92rem;color:var(--muted);line-height:1.7;}
+    .ci-date{font-size:0.6rem;color:rgba(149,133,184,0.4);margin-top:5px;letter-spacing:0.1em;}
+    .comment-item.ci-reply{margin-top:14px;margin-left:24px;padding-left:14px;border-left:2px solid var(--rule);}
+    .ci-reply-btn{background:none;border:none;color:var(--violet);font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;padding:0;margin-left:8px;opacity:0.7;}
+    .ci-reply-btn:hover{opacity:1;}
+    .ci-reply-box{display:none;margin-top:10px;}
+    .ci-reply-box textarea{width:100%;padding:8px 12px;border-radius:6px;background:var(--bg3);border:1px solid var(--rule);color:var(--text);font-family:var(--sans);font-size:0.82rem;resize:vertical;}
+    .ci-reply-box textarea:focus{outline:none;border-color:var(--purple);}
+    .ci-report-btn{background:none;border:none;color:#f87171;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;padding:0;margin-left:8px;opacity:0.6;}
+    .ci-report-btn:hover{opacity:1;}
+    .ci-report-box{display:none;margin-top:10px;}
+    .ci-report-box textarea{width:100%;padding:8px 12px;border-radius:6px;background:var(--bg3);border:1px solid rgba(248,113,113,0.3);color:var(--text);font-family:var(--sans);font-size:0.82rem;resize:vertical;}
+    .ci-report-box textarea:focus{outline:none;border-color:#f87171;}
+    .ci-reply-actions .ci-report-submit{background:#dc2626;border-color:#dc2626;}
+    .ci-reply-actions{display:flex;gap:8px;margin-top:6px;justify-content:flex-end;}
+    .ci-reply-actions button{font-size:0.72rem;padding:5px 12px;border-radius:5px;border:1px solid var(--rule);background:none;color:var(--muted);cursor:pointer;}
+    .ci-reply-actions .ci-reply-submit{background:var(--purple);color:#fff;border-color:var(--purple);}
+    .ci-reply-actions button:hover{opacity:0.85;}
+
+    /* IMAGE EDIT */
+    .edit-img-preview{width:100%;max-height:200px;object-fit:cover;border-radius:8px;display:none;margin-bottom:10px;}
+    .edit-img-box{border:1px dashed rgba(167,139,250,0.25);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+    .edit-img-box:hover{border-color:var(--violet);background:rgba(124,58,237,0.04);}
+    .edit-img-box.has-image{border-style:solid;border-color:rgba(124,58,237,0.4);}
+    .edit-img-label{font-size:0.78rem;color:var(--muted);line-height:1.5;}
+    .edit-img-cost{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:0.68rem;color:var(--gold);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:2px 10px;}
+    .edit-img-remove{display:none;margin-top:8px;font-size:0.7rem;color:#f87171;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;}
+    .edit-img-box.has-image .edit-img-remove{display:block;}
+    #editImageInput{display:none;}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--bg3);border:1px solid var(--rule);border-radius:4px;padding:12px 24px;font-size:0.82rem;color:var(--text);opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    .toast.success{border-color:rgba(124,58,237,0.5);color:var(--violet);}
+    .toast.error{border-color:rgba(248,113,113,0.5);color:#f87171;}
+    .toast.gold{border-color:rgba(245,158,11,0.5);color:var(--gold);}
+
+    /* LOADER */
+    .page-loader{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+    .loader-ring{width:44px;height:44px;border-radius:50%;border:2px solid rgba(124,58,237,0.12);border-top-color:var(--violet);animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loader-text{font-family:var(--serif);font-style:italic;font-size:0.88rem;color:var(--muted);}
+
+    @media(max-width:640px){
+      .header{padding:0 20px;}
+      .poem-wrap{padding:28px 16px 80px;}
+      .poem-body,.edit-panel{padding:22px 18px 16px;}
+      .poem-actions{padding:14px 18px;}
+      .comments-section{padding:22px 18px 0;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-loader" id="pageLoader">
+  <div class="loader-ring"></div>
+  <p class="loader-text">Opening the verse…</p>
+</div>
+
+<header class="header">
+  <a class="back-link" href="home.html">
+    <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>
+    Home
+  </a>
+  <span class="header-brand">Pen Africa</span>
+  <nav class="header-icons">
+    <div class="notif-wrap" id="notifWrap">
+      <button class="notif-bell-btn" id="notifBellBtn" title="Notifications">
+        🔔
+        <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-dropdown-header">
+          <span>Notifications</span>
+          <button class="notif-mark-all" id="notifMarkAllBtn">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="notif-loading">Loading…</div>
+        </div>
+      </div>
+    </div>
+    <a href="exchange.html">🔄</a>
+    <a href="profile.html">👤</a>
+  </nav>
+</header>
+
+<div class="poem-wrap">
+  <div class="poem-card" id="poemCard">
+
+    <!-- TOP RIGHT: avatar + follow (others) OR edit (owner) -->
+    <div class="poem-top-right">
+      <a href="#" id="authorAvatarLink">
+        <div class="author-avatar" id="authorAvatar"></div>
+      </a>
+      <button class="follow-btn" id="followBtn" onclick="toggleFollow()">Follow</button>
+      <button class="edit-btn"   id="editBtn"   onclick="openEdit()">✏ Edit</button>
+      <button class="fc-btn" id="fcBtn" onclick="openFounderChoiceBox()" style="display:none;">✨ Founder's Choice</button>
+    </div>
+
+    <div class="fc-box" id="fcBox" style="display:none;">
+      <p class="fc-box-label">Award Founder's Choice</p>
+      <textarea id="fcNoteInput" placeholder="Optional — say what moved you about this poem…" rows="2"></textarea>
+      <div class="fc-box-actions">
+        <button onclick="cancelFounderChoice()">Cancel</button>
+        <button onclick="submitFounderChoice()" class="fc-submit">Award 1000 pts ✨</button>
+      </div>
+    </div>
+
+    <!-- Visual -->
+    <div id="poemVisual"></div>
+
+    <!-- VIEW MODE body -->
+    <div class="poem-body" id="poemViewBody">
+      <span class="poem-genre"        id="poemGenre"       style="display:none"></span>
+      <h1  class="poem-title-display" id="poemTitleDisplay">Loading…</h1>
+      <p   class="poem-author-line"   id="poemAuthorLine"></p>
+      <div class="poem-content"       id="poemContent"></div>
+    </div>
+
+    <!-- EDIT PANEL — only visible to owner -->
+    <div class="edit-panel" id="editPanel">
+      <p class="edit-field-label">Title</p>
+      <input class="edit-title-input" id="editTitleInput" type="text" maxlength="120"/>
+
+      <p class="edit-field-label">Genre</p>
+      <select class="edit-genre-select" id="editGenreSelect">
+        <option value="">No genre</option>
+        <option value="Love">Love</option>
+        <option value="Nature">Nature</option>
+        <option value="Freedom">Freedom</option>
+        <option value="War">War</option>
+        <option value="Identity">Identity</option>
+        <option value="Grief">Grief</option>
+        <option value="Hope">Hope</option>
+        <option value="Africa">Africa</option>
+        <option value="Spirituality">Spirituality</option>
+        <option value="Politics">Politics</option>
+        <option value="Family">Family</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <p class="edit-field-label">Poem Image</p>
+      <div class="edit-img-box" id="editImgBox" onclick="document.getElementById('editImageInput').click()">
+        <img class="edit-img-preview" id="editImgPreview" src="" alt=""/>
+        <div id="editImgPlaceholder">
+          <p class="edit-img-label">Tap to change the poem image</p>
+          <span class="edit-img-cost">★ 500 pts to add/change image</span>
+        </div>
+        <p class="edit-img-remove" onclick="removeImage(event)">✕ Remove image</p>
+      </div>
+      <input type="file" id="editImageInput" accept="image/*" onchange="handleEditImage(event)"/>
+
+      <p class="edit-field-label">Poem</p>
+      <textarea class="edit-content-input" id="editContentInput"></textarea>
+
+      <div class="edit-actions">
+        <button class="btn-save-edit"   id="btnSaveEdit"   onclick="saveEdit()">Save Changes</button>
+        <button class="btn-cancel-edit"                    onclick="closeEdit()">Cancel</button>
+        <button class="btn-delete-poem"                    onclick="deletePoem()">Delete Poem</button>
+      </div>
+    </div>
+
+    <!-- Actions bar -->
+    <div class="poem-actions">
+      <button class="like-btn" id="likeBtn" onclick="toggleLike()">
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        <span class="like-count" id="likeCount">0</span> Likes
+      </button>
+      <button class="share-btn" onclick="sharePoem()">
+        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share
+      </button>
+    </div>
+
+    <!-- Comments -->
+    <div class="comments-section">
+      <p class="comments-label">Comments</p>
+      <div class="new-comment">
+        <div class="nc-avatar" id="myAvatar"></div>
+        <div class="nc-right">
+          <textarea class="nc-input" id="commentInput" placeholder="Leave a comment…" rows="3"></textarea>
+          <button class="nc-submit" onclick="submitComment()">Post Comment</button>
+        </div>
+      </div>
+      <div class="comments-list" id="commentsList"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var SUPA_URL = "https://nefqvdfhkeovwuneeozg.supabase.co";
+  var SUPA_KEY = "sb_publishable_JLJ2a-Ks9LznxtOAYrtzEQ_Q6dzGsHh";
+  var client   = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  var currentUser    = null;
+  var currentProfile = null;
+  var currentPoem    = null;
+  var isLiked        = false;
+  var isFollowing    = false;
+  var isOwner        = false;
+  var isStaff        = false;
+  var poemId         = new URLSearchParams(window.location.search).get("id");
+  var newImageFile   = null;   // holds a new image file selected during edit
+  var removeImageFlag = false; // true if user wants to remove existing image
+
+  /* ══ TOAST ══ */
+  function showToast(msg, type) {
+    type = type || "success";
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "toast " + type + " show";
+    setTimeout(function() { t.className = "toast"; }, 3500);
+  }
+
+  function fmtDate(str) {
+    if (!str) return "";
+    return new Date(str).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
+  }
+
+  /* ══ NOTIFICATIONS ══ */
+  var notifications = [];
+
+  function escapeHtmlNotif(s) {
+    return (s || "").replace(/[&<>"']/g, function(c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]; });
+  }
+
+  function timeAgoNotif(dateStr) {
+    var diff = Date.now() - new Date(dateStr).getTime();
+    var mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return mins + "m ago";
+    var hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + "h ago";
+    var days = Math.floor(hours / 24);
+    if (days < 7) return days + "d ago";
+    return new Date(dateStr).toLocaleDateString();
+  }
+
+  async function initNotifications(userId) {
+    await loadNotifications(userId);
+    wireNotificationEvents(userId);
+  }
+
+  async function loadNotifications(userId) {
+    var result = await client
+      .from("notifications")
+      .select("id, type, title, body, link_url, read, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    if (result.error) {
+      console.warn("Notifications load error:", result.error.message);
+      document.getElementById("notifList").innerHTML = '<div class="notif-empty">Couldn\'t load notifications.</div>';
+      return;
+    }
+
+    notifications = result.data || [];
+    renderNotifBadge();
+    renderNotifList();
+  }
+
+  function renderNotifBadge() {
+    var unreadCount = notifications.filter(function(n) { return !n.read; }).length;
+    var badge = document.getElementById("notifBadge");
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+      badge.style.display = "flex";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  function renderNotifList() {
+    var el = document.getElementById("notifList");
+    if (!notifications.length) {
+      el.innerHTML = '<div class="notif-empty">You\'re all caught up.</div>';
+      return;
+    }
+    el.innerHTML = notifications.map(function(n) {
+      return '<div class="notif-item ' + (n.read ? '' : 'unread') + '" data-id="' + n.id + '" data-link="' + escapeHtmlNotif(n.link_url || '') + '">' +
+        '<p class="notif-title">' + escapeHtmlNotif(n.title) + '</p>' +
+        (n.body ? '<p class="notif-body">' + escapeHtmlNotif(n.body) + '</p>' : '') +
+        '<p class="notif-time">' + timeAgoNotif(n.created_at) + '</p>' +
+      '</div>';
+    }).join("");
+
+    el.querySelectorAll(".notif-item").forEach(function(item) {
+      item.addEventListener("click", async function() {
+        var id = parseInt(item.dataset.id);
+        var link = item.dataset.link;
+        await markNotifRead(id);
+        if (link) window.location.href = link;
+      });
+    });
+  }
+
+  async function markNotifRead(id) {
+    var notif = notifications.find(function(n) { return n.id === id; });
+    if (!notif || notif.read) return;
+    notif.read = true;
+    renderNotifBadge();
+    renderNotifList();
+    await client.from("notifications").update({ read: true }).eq("id", id);
+  }
+
+  async function markAllNotifsRead(userId) {
+    var unread = notifications.filter(function(n) { return !n.read; });
+    if (!unread.length) return;
+    notifications.forEach(function(n) { n.read = true; });
+    renderNotifBadge();
+    renderNotifList();
+    await client.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
+  }
+
+  function wireNotificationEvents(userId) {
+    var bellBtn = document.getElementById("notifBellBtn");
+    var dropdown = document.getElementById("notifDropdown");
+    var wrap = document.getElementById("notifWrap");
+
+    bellBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle("open");
+    });
+
+    document.getElementById("notifMarkAllBtn").addEventListener("click", function(e) {
+      e.stopPropagation();
+      markAllNotifsRead(userId);
+    });
+
+    document.addEventListener("click", function(e) {
+      if (!wrap.contains(e.target)) dropdown.classList.remove("open");
+    });
+  }
+
+  /* ══ LIKE ══ */
+  async function toggleLike() {
+    var btn     = document.getElementById("likeBtn");
+    var countEl = document.getElementById("likeCount");
+    var count   = parseInt(countEl.textContent) || 0;
+    if (isLiked) {
+      await client.from("poem_likes").delete().eq("poem_id", poemId).eq("user_id", currentUser.id);
+      isLiked = false; count = Math.max(0, count - 1);
+      btn.classList.remove("liked");
+    } else {
+      await client.from("poem_likes").insert([{ poem_id: poemId, user_id: currentUser.id }]);
+      isLiked = true; count++;
+      btn.classList.add("liked");
+      showToast("Liked ✦");
+    }
+    countEl.textContent = count;
+    client.from("poems").update({ likes_count: count }).eq("id", poemId);
+  }
+
+  /* ══ FOLLOW ══ */
+  async function toggleFollow() {
+    if (!currentPoem || isOwner) return;
+    var btn = document.getElementById("followBtn");
+    var authorId = currentPoem.user_id;
+
+    btn.disabled = true;
+    var result = await client.rpc("toggle_follow", { p_target_user_id: authorId });
+    btn.disabled = false;
+
+    if (result.error) { showToast(result.error.message, "error"); return; }
+
+    isFollowing = result.data.now_following;
+    if (isFollowing) {
+      btn.textContent = "Following"; btn.classList.add("following");
+      showToast("Following " + (currentPoem.pen_name || "this poet") + " ✦");
+    } else {
+      btn.textContent = "Follow"; btn.classList.remove("following");
+    }
+  }
+
+  /* ══ SHARE ══ */
+  function sharePoem() {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      showToast("Link copied ✦");
+    }
+  }
+
+  /* ══ IMAGE EDIT HANDLERS ══ */
+  function handleEditImage(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    // Check points — 500 needed if adding/changing image
+    var points = currentProfile.points_balance || 0;
+    if (!currentPoem.image_url && points < 500) {
+      showToast("You need 500 pts to add an image. You have " + points + " pts.", "error");
+      document.getElementById("editImageInput").value = "";
+      return;
+    }
+
+    newImageFile    = file;
+    removeImageFlag = false;
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var preview     = document.getElementById("editImgPreview");
+      var placeholder = document.getElementById("editImgPlaceholder");
+      var box         = document.getElementById("editImgBox");
+      preview.src           = ev.target.result;
+      preview.style.display = "block";
+      placeholder.style.display = "none";
+      box.classList.add("has-image");
+    };
+    reader.readAsDataURL(file);
+    showToast("Image selected — 500 pts deducted on save.", "gold");
+  }
+
+  function removeImage(e) {
+    e.stopPropagation();
+    newImageFile    = null;
+    removeImageFlag = true;
+    var preview     = document.getElementById("editImgPreview");
+    var placeholder = document.getElementById("editImgPlaceholder");
+    var box         = document.getElementById("editImgBox");
+    preview.style.display     = "none";
+    preview.src               = "";
+    placeholder.style.display = "block";
+    box.classList.remove("has-image");
+    document.getElementById("editImageInput").value = "";
+    showToast("Image will be removed on save.", "error");
+  }
+
+  /* ══ EDIT — open ══ */
+  function openEdit() {
+    document.getElementById("editTitleInput").value  = currentPoem.title || "";
+    document.getElementById("editGenreSelect").value = currentPoem.genre  || "";
+    var plain = (currentPoem.content || "").replace(/<[^>]*>/g, "");
+    document.getElementById("editContentInput").value = plain;
+
+    // Reset image state
+    newImageFile    = null;
+    removeImageFlag = false;
+    var preview     = document.getElementById("editImgPreview");
+    var placeholder = document.getElementById("editImgPlaceholder");
+    var box         = document.getElementById("editImgBox");
+    if (currentPoem.image_url) {
+      preview.src           = currentPoem.image_url;
+      preview.style.display = "block";
+      placeholder.style.display = "none";
+      box.classList.add("has-image");
+    } else {
+      preview.style.display     = "none";
+      placeholder.style.display = "block";
+      box.classList.remove("has-image");
+    }
+    document.getElementById("editPanel").classList.add("open");
+    document.getElementById("editBtn").style.display = "none";
+    document.getElementById("editPanel").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  /* ══ EDIT — close ══ */
+  function closeEdit() {
+    document.getElementById("editPanel").classList.remove("open");
+    document.getElementById("editBtn").style.display = "inline-block";
+  }
+
+  /* ══ EDIT — save ══ */
+  async function saveEdit() {
+    var newTitle   = document.getElementById("editTitleInput").value.trim();
+    var newGenre   = document.getElementById("editGenreSelect").value;
+    var newContent = document.getElementById("editContentInput").value.trim();
+
+    if (!newTitle)   { showToast("Title cannot be empty.", "error"); return; }
+    if (!newContent) { showToast("Poem cannot be empty.", "error"); return; }
+
+    var btn = document.getElementById("btnSaveEdit");
+    btn.disabled = true; btn.textContent = "Saving…";
+
+    // Handle image upload if a new one was selected
+    var finalImageUrl = currentPoem.image_url || null;
+
+    if (removeImageFlag) {
+      finalImageUrl = null;
+    } else if (newImageFile) {
+      // Deduct 500 points for image change
+      var pointCost = 500;
+      var curPoints = currentProfile.points_balance || 0;
+      if (curPoints < pointCost) {
+        showToast("Not enough points to change image (" + pointCost + " needed).", "error");
+        btn.disabled = false; btn.textContent = "Save Changes";
+        return;
+      }
+
+      var ext      = newImageFile.name.split(".").pop().toLowerCase();
+      var filePath = currentUser.id + "/poem-" + poemId + "." + ext;
+      var upResult = await client.storage.from("poem-images").upload(filePath, newImageFile, { upsert: true, contentType: newImageFile.type });
+
+      if (upResult.error) {
+        showToast("Image upload failed: " + upResult.error.message, "error");
+        btn.disabled = false; btn.textContent = "Save Changes";
+        return;
+      }
+
+      finalImageUrl = client.storage.from("poem-images").getPublicUrl(filePath).data.publicUrl;
+
+      // Deduct points
+      var newBal = curPoints - pointCost;
+      await client.from("profiles").update({ points_balance: newBal }).eq("id", currentUser.id);
+      await client.from("points").insert([{ user_id: currentUser.id, amount: -pointCost, reason: "Image change on poem " + poemId }]);
+      currentProfile.points_balance = newBal;
+    }
+
+    var result = await client.from("poems")
+      .update({ title: newTitle, genre: newGenre || null, content: newContent, image_url: finalImageUrl })
+      .eq("id", poemId)
+      .eq("user_id", currentUser.id);
+
+    btn.disabled = false; btn.textContent = "Save Changes";
+
+    if (result.error) { showToast("Save failed: " + result.error.message, "error"); return; }
+
+    // Update local state
+    currentPoem.title     = newTitle;
+    currentPoem.genre     = newGenre;
+    currentPoem.content   = newContent;
+    currentPoem.image_url = finalImageUrl;
+    newImageFile    = null;
+    removeImageFlag = false;
+
+    // Update view
+    document.getElementById("poemTitleDisplay").textContent = newTitle;
+    document.getElementById("poemContent").textContent      = newContent;
+    document.title = "Pen Africa — " + newTitle;
+
+    if (newGenre) {
+      var g = document.getElementById("poemGenre");
+      g.textContent   = newGenre;
+      g.style.display = "inline-block";
+    } else {
+      document.getElementById("poemGenre").style.display = "none";
+    }
+
+    // Update visual
+    var visual = document.getElementById("poemVisual");
+    if (finalImageUrl) {
+      visual.innerHTML = '<img class="poem-image" src="' + finalImageUrl + '" alt="" onclick="openLightbox(\'' + finalImageUrl + '\')"/>';
+    } else {
+      visual.innerHTML = '<div class="poem-initial">' + (newTitle || "P")[0].toUpperCase() + '</div>';
+    }
+
+    closeEdit();
+    showToast("Poem updated ✦", "success");
+  }
+
+  /* ══ DELETE POEM ══ */
+  async function deletePoem() {
+    if (!confirm("Delete this poem permanently? This cannot be undone.")) return;
+    await client.from("comments").delete().eq("poem_id", poemId);
+    await client.from("poem_likes").delete().eq("poem_id", poemId);
+    var result = await client.from("poems").delete().eq("id", poemId).eq("user_id", currentUser.id);
+    if (result.error) { showToast("Delete failed: " + result.error.message, "error"); return; }
+    showToast("Poem deleted.", "error");
+    setTimeout(function() { window.location.href = "profile.html"; }, 1500);
+  }
+
+  /* ══ COMMENT ══ */
+  async function submitComment() {
+    var input   = document.getElementById("commentInput");
+    var content = input.value.trim();
+    if (!content) { showToast("Write something first.", "error"); return; }
+
+    var result = await client.rpc("award_comment_points", {
+      p_poem_id: poemId,
+      p_content: content,
+      p_pen_name: currentProfile.pen_name || "Anonymous"
+    });
+
+    if (result.error) {
+      // Cap hit, or any other server-side rejection — surfaced directly, no points awarded
+      showToast(result.error.message, "error");
+      return;
+    }
+
+    input.value = "";
+    showToast("Comment posted ✦ +50 pts", "gold");
+
+    currentProfile.points_balance = result.data.new_balance;
+
+    loadComments();
+  }
+
+  /* ══ LOAD COMMENTS (with public reply threading) ══ */
+  async function loadComments() {
+    var result = await client
+      .from("comments")
+      .select("id, pen_name, content, created_at, user_id, parent_comment_id")
+      .eq("poem_id", poemId)
+      .order("created_at", { ascending: true });
+
+    var list = document.getElementById("commentsList");
+
+    if (result.error) {
+      console.error("Comments error:", result.error.message);
+      list.innerHTML = '<p style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:0.92rem;padding-bottom:20px;">Couldn\'t load comments. Try refreshing.</p>';
+      return;
+    }
+
+    if (!result.data || result.data.length === 0) {
+      list.innerHTML = '<p style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:0.92rem;padding-bottom:20px;">No comments yet. Be the first to respond.</p>';
+      return;
+    }
+
+    // Build nested structure: top-level comments, each carrying its replies
+    var byId = {};
+    result.data.forEach(function(c) { c.replies = []; byId[c.id] = c; });
+    var topLevel = [];
+    result.data.forEach(function(c) {
+      if (c.parent_comment_id && byId[c.parent_comment_id]) {
+        byId[c.parent_comment_id].replies.push(c);
+      } else {
+        topLevel.push(c);
+      }
+    });
+
+    list.innerHTML = topLevel.map(function(c) { return renderCommentNode(c, false); }).join("");
+  }
+
+  function renderCommentNode(c, isReply) {
+    var init = (c.pen_name || "?")[0].toUpperCase();
+    // Anyone logged in can reply to any comment, at any depth.
+    // Submit routing (free author reply vs. paid commenter reply) is
+    // decided at submit-time based on who's actually clicking, not here.
+    var replyBtn = '<button class="ci-reply-btn" onclick="openReplyBox(\'' + c.id + '\')">Reply</button>';
+    var reportBtn = (c.user_id !== currentUser.id)
+      ? '<button class="ci-report-btn" onclick="openReportBox(\'' + c.id + '\')">Report</button>'
+      : '';
+    var repliesHtml = (c.replies || []).map(function(r) { return renderCommentNode(r, true); }).join("");
+
+    return '<div class="comment-item' + (isReply ? ' ci-reply' : '') + '">' +
+      '<div class="ci-avatar">' + init + '</div>' +
+      '<div class="ci-body">' +
+        '<p class="ci-pen">'  + (c.pen_name || "Anonymous") + '</p>' +
+        '<p class="ci-text">' + c.content + '</p>' +
+        '<p class="ci-date">' + fmtDate(c.created_at) + ' ' + replyBtn + ' ' + reportBtn + '</p>' +
+        '<div class="ci-reply-box" id="replyBox-' + c.id + '" style="display:none;">' +
+          '<textarea id="replyInput-' + c.id + '" placeholder="Write a public reply…" rows="2"></textarea>' +
+          '<div class="ci-reply-actions">' +
+            '<button onclick="cancelReply(\'' + c.id + '\')">Cancel</button>' +
+            '<button onclick="submitReply(\'' + c.id + '\')" class="ci-reply-submit">Reply Publicly</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ci-report-box" id="reportBox-' + c.id + '" style="display:none;">' +
+          '<textarea id="reportInput-' + c.id + '" placeholder="Why are you reporting this comment?" rows="2"></textarea>' +
+          '<div class="ci-reply-actions">' +
+            '<button onclick="cancelReport(\'' + c.id + '\')">Cancel</button>' +
+            '<button onclick="submitReport(\'' + c.id + '\')" class="ci-report-submit">Submit Report</button>' +
+          '</div>' +
+        '</div>' +
+        repliesHtml +
+      '</div></div>';
+  }
+
+  function openReplyBox(commentId) {
+    var box = document.getElementById("replyBox-" + commentId);
+    if (box) { box.style.display = "block"; document.getElementById("replyInput-" + commentId).focus(); }
+  }
+  function cancelReply(commentId) {
+    var box = document.getElementById("replyBox-" + commentId);
+    if (box) box.style.display = "none";
+  }
+
+  function openReportBox(commentId) {
+    var box = document.getElementById("reportBox-" + commentId);
+    if (box) { box.style.display = "block"; document.getElementById("reportInput-" + commentId).focus(); }
+  }
+  function cancelReport(commentId) {
+    var box = document.getElementById("reportBox-" + commentId);
+    if (box) box.style.display = "none";
+  }
+
+  async function submitReport(commentId) {
+    var input = document.getElementById("reportInput-" + commentId);
+    var reason = input.value.trim();
+    if (!reason) { showToast("Tell us why you're reporting this.", "error"); return; }
+
+    var result = await client.rpc("report_comment", {
+      p_comment_id: commentId,
+      p_reason: reason
+    });
+
+    if (result.error) { showToast(result.error.message, "error"); return; }
+
+    input.value = "";
+    cancelReport(commentId);
+    showToast("Report submitted. Thank you for helping keep Pen Africa safe.");
+  }
+
+  function openFounderChoiceBox() {
+    document.getElementById("fcBox").style.display = "block";
+  }
+  function cancelFounderChoice() {
+    document.getElementById("fcBox").style.display = "none";
+  }
+
+  async function submitFounderChoice() {
+    var note = document.getElementById("fcNoteInput").value.trim() || null;
+    if (!confirm('Award Founder\'s Choice to "' + (currentPoem.title || "this poem") + '"? This awards 1000 points and cannot be undone.')) return;
+
+    var result = await client.rpc("award_founders_choice", {
+      p_poem_id: poemId,
+      p_note: note
+    });
+
+    if (result.error) { showToast(result.error.message, "error"); return; }
+
+    cancelFounderChoice();
+    document.getElementById("fcBtn").style.display = "none";
+    showToast("✨ Founder's Choice awarded — 1000 points sent.");
+  }
+
+  async function submitReply(commentId) {
+    var input = document.getElementById("replyInput-" + commentId);
+    var content = input.value.trim();
+    if (!content) { showToast("Write something first.", "error"); return; }
+
+    var result;
+    if (isOwner) {
+      // Poem author replying — free, uncapped, no points (by design)
+      result = await client.rpc("author_reply_to_comment", {
+        p_comment_id: commentId,
+        p_content: content
+      });
+    } else {
+      // Any other commenter replying — normal paid comment action,
+      // subject to the existing once-per-poem cap (this reply IS their
+      // one earning action on this poem, same as a top-level comment).
+      result = await client.rpc("award_comment_points", {
+        p_poem_id: poemId,
+        p_content: content,
+        p_pen_name: currentProfile.pen_name || "Anonymous",
+        p_parent_comment_id: commentId
+      });
+    }
+
+    if (result.error) { showToast(result.error.message, "error"); return; }
+
+    input.value = "";
+    showToast(isOwner ? "Reply posted ✦" : "Reply posted ✦ +50 pts");
+    loadComments();
+  }
+
+  /* ══ MAIN LOADER — all Supabase calls parallelised ══ */
+  (async function() {
+    var loader = document.getElementById("pageLoader");
+    var timedOut = false;
+    var watchdog = setTimeout(function() {
+      timedOut = true;
+      loader.style.display = "none";
+      showToast("Taking longer than expected. Try refreshing.", "error");
+    }, 12000);
+
+    try {
+      if (!poemId) { window.location.href = "home.html"; return; }
+
+      // Step 1: session (must be first — need user id for parallel calls)
+      var sessionResult = await client.auth.getSession();
+      var session = sessionResult.data && sessionResult.data.session ? sessionResult.data.session : null;
+      if (!session || !session.user) { window.location.href = "login.html"; return; }
+      currentUser = session.user;
+      initNotifications(currentUser.id);
+
+      // Step 2: fire data fetches in parallel — profile, poem, like
+      // (comments load separately via loadComments(), which needs
+      // parent_comment_id for threading, not fetched here)
+      var parallel = await Promise.all([
+        client.from("profiles").select("pen_name, profile_picture, points_balance, role").eq("id", currentUser.id).single(),
+        client.from("poems").select("*").eq("id", poemId).single(), // RLS handles visibility
+        client.from("poem_likes").select("id").eq("poem_id", poemId).eq("user_id", currentUser.id)
+      ]);
+
+      var profileRes  = parallel[0];
+      var poemRes     = parallel[1];
+      var likeRes     = parallel[2];
+
+      currentProfile = profileRes.data || {};
+
+      // Log any errors from parallel queries for debugging
+      if (profileRes.error)  console.error("Profile error:",  profileRes.error.message);
+      if (likeRes.error)     console.error("Like error:",     likeRes.error.message);
+
+      if (poemRes.error || !poemRes.data) {
+        console.error("Poem fetch error:", poemRes.error);
+        document.getElementById("poemTitleDisplay").textContent = "Poem not found.";
+        document.getElementById("poemContent").textContent = poemRes.error
+          ? poemRes.error.message
+          : "This poem could not be loaded. It may have been deleted or is not yet published.";
+        return; // loader hidden by finally block
+      }
+      currentPoem = poemRes.data;
+      isOwner     = currentPoem.user_id === currentUser.id;
+      isStaff     = currentProfile.role === "founder" || currentProfile.role === "admin";
+
+      // Fetch any applied marketplace cosmetics (border/background/sticker) — collect the IDs actually set
+      var cosmeticIds = [currentPoem.border_item_id, currentPoem.background_item_id, currentPoem.sticker_item_id].filter(Boolean);
+      var cosmeticItems = {};
+      if (cosmeticIds.length > 0) {
+        var cosmeticRes = await client.from("marketplace_items").select("id, category, preview_url").in("id", cosmeticIds);
+        if (!cosmeticRes.error && cosmeticRes.data) {
+          cosmeticRes.data.forEach(function(item) { cosmeticItems[item.id] = item; });
+        }
+      }
+
+      // Fetch follow status + author pic in parallel (need poem.user_id first)
+      var parallel2 = await Promise.all([
+        isOwner ? Promise.resolve({ data: null }) :
+          client.from("follows").select("id").eq("follower_id", currentUser.id).eq("following_id", currentPoem.user_id),
+        client.from("profiles").select("profile_picture").eq("id", currentPoem.user_id).single()
+      ]);
+
+      var followRes     = parallel2[0];
+      var authorPicRes  = parallel2[1];
+
+      // ── Render everything ──
+
+      // My avatar
+      var myAv = document.getElementById("myAvatar");
+      myAv.textContent = (currentProfile.pen_name || "?")[0].toUpperCase();
+      if (currentProfile.profile_picture) {
+        myAv.innerHTML = '<img src="' + currentProfile.profile_picture + '" alt=""/>';
+      }
+
+      // Author avatar
+      var authorAv  = document.getElementById("authorAvatar");
+      var authorPic = authorPicRes.data && authorPicRes.data.profile_picture ? authorPicRes.data.profile_picture : null;
+      if (authorPic) {
+        authorAv.innerHTML = '<img src="' + authorPic + '" alt=""/>';
+      } else {
+        authorAv.textContent = (currentPoem.pen_name || "?")[0].toUpperCase();
+      }
+      document.getElementById("authorAvatarLink").href = "profile.html?id=" + currentPoem.user_id;
+
+      // Owner vs visitor controls
+      if (isOwner) {
+        document.getElementById("followBtn").style.display = "none";
+        document.getElementById("editBtn").style.display   = "inline-block";
+      } else {
+        // Follow state
+        if (followRes.data && followRes.data.length > 0) {
+          isFollowing = true;
+          var fb = document.getElementById("followBtn");
+          fb.textContent = "Following";
+          fb.classList.add("following");
+        }
+      }
+
+      // Founder's Choice — independent of owner/visitor, staff can award
+      // to any poem including their own. Checked async so it doesn't
+      // block the rest of the page render.
+      if (isStaff) {
+        client.rpc("poem_has_founders_choice", { p_poem_id: poemId }).then(function(result) {
+          if (!result.error && !result.data) {
+            document.getElementById("fcBtn").style.display = "inline-block";
+          }
+        });
+      }
+
+      // Title, author, content
+      document.title = "Pen Africa — " + (currentPoem.title || "Poem");
+      document.getElementById("poemTitleDisplay").textContent = currentPoem.title || "Untitled";
+      document.getElementById("poemAuthorLine").textContent   = currentPoem.pen_name ? "— " + currentPoem.pen_name : "";
+
+      var contentEl = document.getElementById("poemContent");
+      contentEl.innerHTML = currentPoem.content || "";
+      if (currentPoem.font && currentPoem.font !== "default") {
+        contentEl.style.fontFamily = currentPoem.font + ", serif";
+      }
+
+      // Genre
+      if (currentPoem.genre) {
+        var genreEl = document.getElementById("poemGenre");
+        genreEl.textContent   = currentPoem.genre;
+        genreEl.style.display = "inline-block";
+      }
+
+      // Visual
+      var visual = document.getElementById("poemVisual");
+      if (currentPoem.image_url) {
+        visual.innerHTML = '<img class="poem-image" src="' + currentPoem.image_url + '" alt="" onclick="openLightbox(\'' + currentPoem.image_url + '\')"/>';
+      } else {
+        visual.innerHTML = '<div class="poem-initial">' + (currentPoem.title || "P")[0].toUpperCase() + '</div>';
+      }
+
+      // Marketplace cosmetics — border, background, sticker
+      var poemCard = document.getElementById("poemCard");
+      if (currentPoem.background_item_id && cosmeticItems[currentPoem.background_item_id]) {
+        var bg = cosmeticItems[currentPoem.background_item_id];
+        poemCard.style.backgroundImage    = 'url(' + bg.preview_url + ')';
+        poemCard.style.backgroundSize     = 'cover';
+        poemCard.style.backgroundPosition = 'center';
+      }
+      if (currentPoem.border_item_id && cosmeticItems[currentPoem.border_item_id]) {
+        var bd = cosmeticItems[currentPoem.border_item_id];
+        poemCard.style.borderImageSource = 'url(' + bd.preview_url + ')';
+        poemCard.style.borderImageSlice  = '32 fill';
+        poemCard.style.borderImageWidth  = '16px';
+        poemCard.style.borderWidth       = '16px';
+        poemCard.style.borderStyle       = 'solid';
+      }
+      if (currentPoem.sticker_item_id && cosmeticItems[currentPoem.sticker_item_id]) {
+        var stk = cosmeticItems[currentPoem.sticker_item_id];
+        var stickerEl = document.createElement("img");
+        stickerEl.src = stk.preview_url;
+        stickerEl.alt = "";
+        stickerEl.style.cssText = "position:absolute;top:12px;right:12px;width:48px;height:48px;object-fit:contain;pointer-events:none;z-index:5;";
+        poemCard.appendChild(stickerEl);
+      }
+
+      // Likes
+      document.getElementById("likeCount").textContent = currentPoem.likes_count || 0;
+      if (likeRes.data && likeRes.data.length > 0) {
+        isLiked = true;
+        document.getElementById("likeBtn").classList.add("liked");
+      }
+
+      // Comments — use the proper threaded renderer, not the old flat inline block
+      loadComments();
+
+    } finally {
+      clearTimeout(watchdog);
+      if (!timedOut) loader.style.display = "none";
+    }
+  })();
+
+  // ── Lightbox ──
+  function openLightbox(src){
+    var ov = document.getElementById("lightboxOverlay");
+    document.getElementById("lightboxImg").src = src;
+    ov.classList.add("active");
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox(){
+    document.getElementById("lightboxOverlay").classList.remove("active");
+    document.body.style.overflow = "";
+  }
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeLightbox(); });
+</script>
+
+<div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
+  <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+  <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()"/>
+</div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pen Africa — Welcome</title>
+  <style>
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{
+      height:100vh; background:#a3d5d5;
+      display:flex; justify-content:center; align-items:center;
+      overflow:hidden; font-family:'Georgia', serif;
+      flex-direction:column; gap:20px;
+    }
+    .logo{ width:90px; height:90px; border-radius:50%; object-fit:cover;
+      opacity:0; animation:fadeIn 1.2s ease .2s forwards;
+      border:2px solid rgba(65, 255, 250, 0.4);
+      box-shadow:0 0 40px rgba(0, 70, 70, 0.30196078431372547); }
+    .text{
+      font-size:clamp(2rem,8vw,4.5rem); font-weight:700;
+      letter-spacing:0.15em; text-transform:uppercase;
+      background:linear-gradient(90deg,#5e8684,#8be8fa,#3ae8ed,#fff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+      opacity:0; animation:fadeIn 1.5s ease .6s forwards;
+    }
+    .sub{
+      font-size:0.75rem; letter-spacing:0.35em; text-transform:uppercase;
+      color:rgba(131,5,199,0.5);
+      opacity:0; animation:fadeIn 1.5s ease 1s forwards;
+    }
+    .fade-out{ animation:fadeOut 1.2s ease forwards !important; }
+    @keyframes fadeIn{ from{opacity:0;transform:scale(0.94);} to{opacity:1;transform:scale(1);} }
+    @keyframes fadeOut{ from{opacity:1;} to{opacity:0;transform:scale(1.06);} }
+  </style>
+</head>
+<body>
+  <img src="logo.png" class="logo" alt="Pen Africa" onerror="this.style.display='none'"/>
+  <div class="text" id="welcomeText">Welcome</div>
+  <p class="sub">Pen Africa</p>
+  <script>
+    setTimeout(function() {
+      document.querySelectorAll('.text,.sub,.logo').forEach(function(el){
+        el.classList.add('fade-out');
+      });
+      setTimeout(function() { window.location.href = "home.html"; }, 1200);
+    }, 3000);
+  </script>
+</body>
+</html>

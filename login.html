@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="login.css">
+  <title>Pen Africa — Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  html, body {
+    background: linear-gradient(180deg, #ffffff 0%, #f0ebff 12%, #ddd6fe 28%, #c30774 50%, #4f0714 70%, #480123 85%, #07030f 100%) fixed !important;
+    background-attachment: fixed !important;
+    min-height: 100vh;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="form-container">
+
+  <h2>Enter Circle</h2>
+
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="login()">Continue</button>
+
+  <p>
+    No identity? <a href="register.html">Forge one</a>
+  </p>
+
+</div>
+
+<!-- KEEP YOUR SUPABASE SCRIPT BELOW EXACTLY AS IS -->
+
+<script>
+
+const supabaseUrl = "https://nefqvdfhkeovwuneeozg.supabase.co";
+const supabaseKey = "sb_publishable_JLJ2a-Ks9LznxtOAYrtzEQ_Q6dzGsHh";
+
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function login() {
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { error } = await client.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  window.location.href = "welcome.html";
+}
+
+</script>
+
+</body>
+</html>

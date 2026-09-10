@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pen Africa — Exchange Critiques</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07050b;--bg2:#0f0a1a;--bg3:#160d26;
+      --purple:#7C3AED;--violet:#A78BFA;
+      --rule:rgba(167,139,250,0.15);
+      --text:#EDE8F5;--muted:#9585B8;--gold:#f59e0b;
+      --serif:'Cormorant Garamond',serif;--sans:'Inter',system-ui,sans-serif;
+    }
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+    a{text-decoration:none;color:inherit;}
+    img{display:block;}
+
+    /* HEADER */
+    .header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 52px;height:68px;border-bottom:1px solid var(--rule);background:rgba(7,5,11,0.95);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100;}
+    .back-link{display:flex;align-items:center;gap:8px;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);transition:color .2s;justify-self:start;}
+    .back-link:hover{color:var(--violet);}
+    .back-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+    .header-brand{font-size:0.72rem;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;text-align:center;background:linear-gradient(90deg,#fff,#a78bfa,#7C3AED,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .header-right{justify-self:end;display:flex;align-items:center;gap:16px;}
+    .points-badge{display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:5px 14px;font-size:0.75rem;font-weight:600;color:var(--gold);}
+
+    /* GATE BANNER */
+    .gate-banner{background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(124,58,237,0.05));border-bottom:1px solid var(--rule);padding:18px 52px;display:none;align-items:center;gap:16px;flex-wrap:wrap;}
+    .gate-banner.visible{display:flex;}
+    .gate-dots{display:flex;gap:8px;}
+    .gate-dot{width:12px;height:12px;border-radius:50%;border:2px solid rgba(167,139,250,0.3);background:transparent;transition:all .3s;}
+    .gate-dot.done{background:var(--purple);border-color:var(--purple);box-shadow:0 0 8px rgba(124,58,237,0.5);}
+    .gate-text{font-size:0.82rem;color:var(--muted);}
+    .gate-text strong{color:var(--violet);}
+
+    /* EXPOSURE PANEL — select own poem to add to critique */
+    .exposure-panel{background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;padding:18px 20px;margin-bottom:32px;display:none;}
+    .exposure-panel.visible{display:block;}
+    .exposure-label{font-size:0.65rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--violet);margin-bottom:10px;}
+    .exposure-select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--rule);border-radius:6px;padding:10px 14px;color:var(--text);font-family:var(--serif);font-size:0.95rem;outline:none;cursor:pointer;}
+    .exposure-select option{background:#1a0f29;}
+    .exposure-note{font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.5;}
+
+    /* MAIN */
+    .main{max-width:860px;margin:0 auto;padding:48px 32px 80px;}
+    .page-eyebrow{font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--violet);margin-bottom:8px;}
+    .page-title{font-family:var(--serif);font-size:clamp(2rem,4vw,3rem);font-weight:300;color:#fff;margin-bottom:6px;}
+    .page-title em{font-style:italic;background:linear-gradient(135deg,#a78bfa,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .page-sub{font-size:0.85rem;color:var(--muted);margin-bottom:36px;line-height:1.6;}
+
+    /* TABS */
+    .tabs{display:flex;gap:0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:36px;}
+    .tab-btn{flex:1;padding:11px 16px;text-align:center;font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .22s;}
+    .tab-btn.active{background:rgba(124,58,237,0.15);color:var(--violet);}
+
+    /* POEM CARDS */
+    .critique-grid{display:flex;flex-direction:column;gap:28px;}
+    .critique-card{background:var(--bg2);border:1px solid var(--rule);border-radius:12px;overflow:hidden;transition:border-color .25s;}
+    .critique-card.commented{border-color:rgba(124,58,237,0.4);}
+
+    .cc-head{padding:18px 22px 0;display:flex;align-items:center;gap:12px;}
+    .cc-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg3);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--violet);cursor:pointer;}
+    .cc-avatar img{width:100%;height:100%;object-fit:cover;}
+    .cc-meta{flex:1;}
+    .cc-pen{font-family:var(--serif);font-size:0.92rem;font-weight:600;color:var(--violet);}
+    .cc-date{font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;}
+    .cc-tags{display:flex;gap:6px;align-items:center;}
+    .cc-genre{font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:10px;padding:2px 9px;}
+    .cc-new-badge{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#fff;background:var(--purple);border-radius:10px;padding:2px 8px;}
+    .cc-exposure-badge{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:2px 8px;}
+
+    .cc-image{width:100%;height:160px;object-fit:cover;display:block;}
+    .cc-initial{width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:2.5rem;font-weight:700;color:rgba(167,139,250,0.1);}
+
+    .cc-body{padding:16px 22px 10px;}
+    .cc-title{font-family:var(--serif);font-size:1.3rem;font-weight:600;color:#fff;margin-bottom:8px;}
+    .cc-excerpt{font-family:var(--serif);font-style:italic;font-size:0.92rem;color:var(--muted);line-height:1.8;max-height:100px;overflow:hidden;position:relative;}
+    .cc-excerpt::after{content:'';position:absolute;bottom:0;left:0;right:0;height:32px;background:linear-gradient(transparent,var(--bg2));}
+    .cc-read-link{display:inline-block;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--violet);margin-top:8px;transition:color .2s;}
+    .cc-read-link:hover{color:#fff;}
+
+    .cc-comment{padding:0 22px 18px;}
+    .comment-input{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--rule);border-radius:6px;padding:10px 14px;color:var(--text);font-family:var(--serif);font-size:0.92rem;outline:none;resize:none;min-height:72px;transition:border-color .2s;font-style:italic;}
+    .comment-input:focus{border-color:var(--violet);}
+    .cc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:10px;}
+    .comment-count{font-size:0.65rem;color:var(--muted);letter-spacing:0.08em;}
+    .comment-submit{padding:9px 20px;background:var(--purple);color:#fff;border:none;border-radius:4px;font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all .22s;white-space:nowrap;}
+    .comment-submit:hover{background:#6d28d9;box-shadow:0 4px 14px rgba(124,58,237,0.4);}
+    .comment-submit:disabled{opacity:0.5;cursor:not-allowed;}
+    .commented-badge{display:none;padding:9px 14px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:6px;font-size:0.78rem;color:var(--violet);text-align:center;margin-top:8px;}
+    .critique-card.commented .commented-badge{display:block;}
+    .critique-card.commented .comment-input,
+    .critique-card.commented .cc-footer{display:none;}
+
+    /* EMPTY */
+    .empty-state{text-align:center;padding:64px 40px;border:1px dashed rgba(167,139,250,0.12);border-radius:12px;}
+    .empty-state p{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:1.05rem;}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--bg3);border:1px solid var(--rule);border-radius:4px;padding:12px 24px;font-size:0.82rem;color:var(--text);opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    .toast.success{border-color:rgba(124,58,237,0.5);color:var(--violet);}
+    .toast.error{border-color:rgba(248,113,113,0.5);color:#f87171;}
+    .toast.gold{border-color:rgba(245,158,11,0.5);color:var(--gold);}
+
+    /* LOADER */
+    .page-loader{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+    .loader-ring{width:48px;height:48px;border-radius:50%;border:2px solid rgba(124,58,237,0.15);border-top-color:var(--violet);animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loader-text{font-family:var(--serif);font-style:italic;font-size:0.9rem;color:var(--muted);}
+
+    @media(max-width:640px){
+      .header{padding:0 20px;}
+      .gate-banner{padding:14px 20px;}
+      .main{padding:32px 16px 60px;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-loader" id="pageLoader">
+  <div class="loader-ring"></div>
+  <p class="loader-text">Loading the exchange…</p>
+</div>
+
+<header class="header">
+  <a class="back-link" href="home.html">
+    <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>
+    Home
+  </a>
+  <span class="header-brand">Exchange Critiques</span>
+  <div class="header-right">
+    <div class="points-badge">★ <span id="pointsDisplay">0</span> pts</div>
+  </div>
+</header>
+
+<!-- GATE BANNER: shown when user is completing critique gate to publish -->
+<div class="gate-banner" id="gateBanner">
+  <div class="gate-dots">
+    <div class="gate-dot" id="gateDot1"></div>
+    <div class="gate-dot" id="gateDot2"></div>
+  </div>
+  <p class="gate-text">Comment on <strong><span id="gateRemaining">2</span> more poem(s)</strong> to publish yours ✦</p>
+</div>
+
+<div class="main">
+  <p class="page-eyebrow">Community Exchange</p>
+  <h1 class="page-title">Read. Respond. <em>Elevate.</em></h1>
+  <p class="page-sub">Critique poems to earn points. New poems appear here automatically. Add your own old poem for a day of exposure by critiquing 2 others.</p>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabNew" onclick="switchTab('new')">✦ New Poems</button>
+    <button class="tab-btn" id="tabExposure" onclick="switchTab('exposure')">🔁 Exposure Poems</button>
+  </div>
+
+  <!-- EXPOSURE PANEL: lets user pick one of their own poems to add -->
+  <div class="exposure-panel" id="exposurePanel">
+    <p class="exposure-label">Add one of your poems for exposure</p>
+    <select class="exposure-select" id="exposureSelect">
+      <option value="">Select a poem to expose…</option>
+    </select>
+    <p class="exposure-note">After you comment on 2 poems below, your selected poem will appear on the Exposure tab for 24 hours.</p>
+  </div>
+
+  <div class="critique-grid" id="critiqueGrid">
+    <div class="empty-state"><p>Loading poems…</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var SUPA_URL = "https://nefqvdfhkeovwuneeozg.supabase.co";
+  var SUPA_KEY = "sb_publishable_JLJ2a-Ks9LznxtOAYrtzEQ_Q6dzGsHh";
+  var client   = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  var currentUser    = null;
+  var currentProfile = null;
+  var currentPoints  = 0;
+  var commentedPoems = {};
+  var currentTab     = "new";
+
+  // Critique gate state (for pending publish)
+  var pendingPublishId  = localStorage.getItem("pendingPublishId") || null;
+  var critiqueCount     = parseInt(localStorage.getItem("critiqueCount") || "0");
+
+  // Exposure gate state (for adding old poem to exposure tab)
+  var exposureGateCount    = parseInt(localStorage.getItem("exposureGateCount") || "0");
+  var selectedExposurePoemId = localStorage.getItem("selectedExposurePoemId") || null;
+
+  function showToast(msg, type) {
+    type = type || "success";
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "toast " + type + " show";
+    setTimeout(function() { t.className = "toast"; }, 3500);
+  }
+
+  /* ══ TAB SWITCHING ══ */
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById("tabNew").className      = "tab-btn" + (tab === "new"      ? " active" : "");
+    document.getElementById("tabExposure").className = "tab-btn" + (tab === "exposure" ? " active" : "");
+    // Show exposure panel only on exposure tab
+    var ep = document.getElementById("exposurePanel");
+    ep.className = "exposure-panel" + (tab === "exposure" ? " visible" : "");
+    loadPoems();
+  }
+
+  /* ══ GATE BANNER ══ */
+  function updateGateBanner() {
+    if (!pendingPublishId) return;
+    document.getElementById("gateBanner").classList.add("visible");
+    var rem = Math.max(0, 2 - critiqueCount);
+    document.getElementById("gateRemaining").textContent = rem;
+    if (critiqueCount >= 1) document.getElementById("gateDot1").classList.add("done");
+    if (critiqueCount >= 2) document.getElementById("gateDot2").classList.add("done");
+  }
+
+  /* ══ POINTS ══ */
+  async function addPoints(amount, reason) {
+    var newBal = currentPoints + amount;
+    await client.from("profiles").update({ points_balance: newBal }).eq("id", currentUser.id);
+    await client.from("points").insert([{ user_id: currentUser.id, amount: amount, reason: reason }]);
+    currentPoints = newBal;
+    document.getElementById("pointsDisplay").textContent = currentPoints;
+  }
+
+  /* ══ SUBMIT COMMENT ══ */
+  async function submitComment(poemId, cardEl) {
+    var textarea = cardEl.querySelector(".comment-input");
+    var content  = (textarea.value || "").trim();
+    if (!content)       { showToast("Write something before submitting.", "error"); return; }
+    if (content.length < 10) { showToast("Too short — say something meaningful!", "error"); return; }
+
+    var btn = cardEl.querySelector(".comment-submit");
+    btn.disabled = true;
+    btn.textContent = "Submitting…";
+
+    var result = await client.rpc("award_comment_points", {
+      p_poem_id: poemId,
+      p_content: content,
+      p_pen_name: currentProfile.pen_name || "Anonymous"
+    });
+
+    if (result.error) {
+      // Cap hit ("already commented"), or any other server-side rejection
+      showToast(result.error.message, "error");
+      btn.disabled = false;
+      btn.textContent = "Submit Critique";
+      return;
+    }
+
+    // Mark card done
+    commentedPoems[poemId] = true;
+    cardEl.classList.add("commented");
+
+    currentPoints = result.data.new_balance;
+    document.getElementById("pointsDisplay").textContent = currentPoints;
+    showToast("Critique submitted ✦ +50 pts", "gold");
+
+    // ── PUBLISH GATE: user is completing critiques to publish their own poem ──
+    if (pendingPublishId) {
+      critiqueCount++;
+      localStorage.setItem("critiqueCount", critiqueCount.toString());
+      updateGateBanner();
+
+      if (critiqueCount >= 2) {
+        var pubResult = await client.from("poems").update({ status: "published" }).eq("id", pendingPublishId);
+        if (!pubResult.error) {
+          var savedId = pendingPublishId;
+          localStorage.removeItem("pendingPublishId");
+          localStorage.removeItem("critiqueCount");
+          pendingPublishId = null;
+          showToast("Your poem is now live! Redirecting… ✦", "success");
+          setTimeout(function() { window.location.href = "poem.html?id=" + savedId; }, 2000);
+          return;
+        }
+      }
+    }
+
+    // ── EXPOSURE GATE: user is completing critiques to add old poem for exposure ──
+    if (selectedExposurePoemId && !pendingPublishId) {
+      exposureGateCount++;
+      localStorage.setItem("exposureGateCount", exposureGateCount.toString());
+
+      if (exposureGateCount >= 2) {
+        // Set poem's critique_until to 24 hours from now
+        var until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await client.from("poems").update({ critique_until: until }).eq("id", selectedExposurePoemId).eq("user_id", currentUser.id);
+        localStorage.removeItem("exposureGateCount");
+        localStorage.removeItem("selectedExposurePoemId");
+        selectedExposurePoemId = null;
+        showToast("Your poem has been added to the Exposure tab for 24 hours! ✦", "success");
+        exposureGateCount = 0;
+      } else {
+        showToast("1 more critique needed to add your poem! ✦", "success");
+      }
+    }
+  }
+
+  /* ══ BUILD CARD ══ */
+  function buildCard(poem, isNew) {
+    var alreadyCommented = commentedPoems[poem.id] ? true : false;
+    var isOwn = poem.user_id === currentUser.id;
+
+    var avatarHtml = poem._authorPic
+      ? '<img src="' + poem._authorPic + '" alt=""/>'
+      : (poem.pen_name || "?")[0].toUpperCase();
+
+    var imageHtml = poem.image_url
+      ? '<img class="cc-image" src="' + poem.image_url + '" alt=""/>'
+      : '<div class="cc-initial">' + (poem.title || "?")[0].toUpperCase() + '</div>';
+
+    var genreTag  = poem.genre    ? '<span class="cc-genre">'    + poem.genre + '</span>' : '';
+    var newTag    = isNew         ? '<span class="cc-new-badge">New</span>' : '';
+    var expTag    = !isNew        ? '<span class="cc-exposure-badge">Exposure</span>' : '';
+    var date      = new Date(poem.created_at).toLocaleDateString("en-GB", { day:"numeric", month:"short" });
+
+    var card = document.createElement("div");
+    card.className = "critique-card" + (alreadyCommented ? " commented" : "");
+    card.id = "card-" + poem.id;
+
+    card.innerHTML =
+      '<div class="cc-head">' +
+        '<div class="cc-avatar" onclick="window.location.href=\'profile.html?id=' + poem.user_id + '\'">' + avatarHtml + '</div>' +
+        '<div class="cc-meta">' +
+          '<p class="cc-pen">' + (poem.pen_name || "Anonymous") + '</p>' +
+          '<p class="cc-date">' + date + '</p>' +
+        '</div>' +
+        '<div class="cc-tags">' + genreTag + newTag + expTag + '</div>' +
+      '</div>' +
+      imageHtml +
+      '<div class="cc-body">' +
+        '<h2 class="cc-title">' + (poem.title || "Untitled") + '</h2>' +
+        '<div class="cc-excerpt">' + (poem.content || "").replace(/<[^>]*>/g, "").slice(0, 260) + '</div>' +
+        '<a class="cc-read-link" href="poem.html?id=' + poem.id + '">Read full poem →</a>' +
+      '</div>' +
+      '<div class="cc-comment">' +
+        (isOwn
+          ? '<div class="commented-badge" style="display:block;">This is your poem</div>'
+          : '<textarea class="comment-input" placeholder="Share your thoughts on this poem…" rows="3"></textarea>' +
+            '<div class="cc-footer">' +
+              '<span class="comment-count">+50 pts for critiquing</span>' +
+              '<button class="comment-submit" onclick="submitComment(\'' + poem.id + '\', document.getElementById(\'card-' + poem.id + '\'))">Submit Critique</button>' +
+            '</div>' +
+            '<div class="commented-badge">✦ You critiqued this poem</div>'
+        ) +
+      '</div>';
+
+    return card;
+  }
+
+  /* ══ LOAD POEMS ══ */
+  async function loadPoems() {
+    var grid = document.getElementById("critiqueGrid");
+    grid.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+
+    var result;
+    if (currentTab === "new") {
+      // Newly published poems — last 48 hours, all users
+      var cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      result = await client
+        .from("poems")
+        .select("id, title, content, genre, image_url, pen_name, user_id, created_at")
+        .eq("status", "published")
+        .gte("created_at", cutoff)
+        .order("created_at", { ascending: false })
+        .limit(30);
+    } else {
+      // Exposure tab: poems with critique_until > now
+      var now = new Date().toISOString();
+      result = await client
+        .from("poems")
+        .select("id, title, content, genre, image_url, pen_name, user_id, created_at, critique_until")
+        .eq("status", "published")
+        .gt("critique_until", now)
+        .order("critique_until", { ascending: true })
+        .limit(30);
+    }
+
+    if (result.error) {
+      grid.innerHTML = '<div class="empty-state"><p>Could not load poems: ' + result.error.message + '</p></div>';
+      return;
+    }
+
+    if (!result.data || result.data.length === 0) {
+      var msg = currentTab === "new"
+        ? "No new poems in the last 48 hours. Check back soon!"
+        : "No poems seeking exposure right now. Be the first — switch to New tab and critique 2 poems!";
+      grid.innerHTML = '<div class="empty-state"><p>' + msg + '</p></div>';
+      return;
+    }
+
+    // Fetch author profile pictures in one batch
+    var userIds = [];
+    result.data.forEach(function(p) { if (userIds.indexOf(p.user_id) === -1) userIds.push(p.user_id); });
+    var picMap = {};
+    if (userIds.length > 0) {
+      var picResult = await client.from("profiles").select("id, profile_picture").in("id", userIds);
+      if (picResult.data) {
+        picResult.data.forEach(function(pr) { picMap[pr.id] = pr.profile_picture || null; });
+      }
+    }
+
+    // Check which poems current user already commented on
+    var commentCheck = await client.from("comments").select("poem_id").eq("user_id", currentUser.id);
+    if (commentCheck.data) {
+      commentCheck.data.forEach(function(cc) { commentedPoems[cc.poem_id] = true; });
+    }
+
+    grid.innerHTML = "";
+    result.data.forEach(function(poem) {
+      poem._authorPic = picMap[poem.user_id] || null;
+      grid.appendChild(buildCard(poem, currentTab === "new"));
+    });
+  }
+
+  /* ══ LOAD OWN POEMS FOR EXPOSURE SELECT ══ */
+  async function loadOwnPoems() {
+    var sel = document.getElementById("exposureSelect");
+    var result = await client
+      .from("poems")
+      .select("id, title")
+      .eq("user_id", currentUser.id)
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (!result.data || result.data.length === 0) {
+      sel.innerHTML = '<option value="">No published poems yet</option>';
+      return;
+    }
+
+    sel.innerHTML = '<option value="">Select a poem to expose…</option>' +
+      result.data.map(function(p) {
+        return '<option value="' + p.id + '">' + (p.title || "Untitled") + '</option>';
+      }).join("");
+
+    sel.onchange = function() {
+      if (!sel.value) return;
+      selectedExposurePoemId = sel.value;
+      localStorage.setItem("selectedExposurePoemId", sel.value);
+      exposureGateCount = 0;
+      localStorage.setItem("exposureGateCount", "0");
+      showToast("Selected. Now critique 2 poems to add it to Exposure!", "success");
+    };
+  }
+
+  /* ══ MAIN LOADER ══ */
+  (async function() {
+    var loader = document.getElementById("pageLoader");
+    try {
+      var sessionResult = await client.auth.getSession();
+      var session = sessionResult.data && sessionResult.data.session ? sessionResult.data.session : null;
+      if (!session || !session.user) { window.location.href = "login.html"; return; }
+      currentUser = session.user;
+
+      var profileResult = await client.from("profiles").select("pen_name, profile_picture, points_balance").eq("id", currentUser.id).single();
+      currentProfile = profileResult.data || {};
+      currentPoints  = currentProfile.points_balance || 0;
+      document.getElementById("pointsDisplay").textContent = currentPoints;
+
+      updateGateBanner();
+      await loadOwnPoems();
+      await loadPoems();
+
+    } finally {
+      loader.style.display = "none";
+    }
+  })();
+</script>
+</body>
+</html>
