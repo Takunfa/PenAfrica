@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /PenAfrica/$
+Allow: /PenAfrica/index.html
+Allow: /PenAfrica/login.html
+Allow: /PenAfrica/register.html
+Disallow: /
+
+Sitemap: https://takunfa.github.io/PenAfrica/sitemap.xml
